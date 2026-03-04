@@ -1,0 +1,133 @@
+import { useEffect, useState } from 'react';
+import {
+  Box,
+  Container,
+  Typography,
+  AppBar,
+  Toolbar,
+  IconButton,
+  List,
+  CircularProgress,
+  Button,
+  Tabs,
+  Tab,
+  Menu,
+  MenuItem,
+} from '@mui/material';
+import { ArrowBack, MoreVert } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { useNotificationsStore } from '../../store/notificationsStore';
+import { NotificationItem } from '../../components/notifications/NotificationItem';
+import { ThemeToggle } from '../../components/common/ThemeToggle';
+
+export const NotificationsPage = () => {
+  const navigate = useNavigate();
+  const {
+    notifications,
+    isLoading,
+    loadNotifications,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    deleteAllRead,
+  } = useNotificationsStore();
+
+  const [tabValue, setTabValue] = useState(0);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+
+  useEffect(() => {
+    const unreadOnly = tabValue === 1;
+    loadNotifications(unreadOnly);
+  }, [tabValue, loadNotifications]);
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+  };
+
+  const handleMarkAllAsRead = async () => {
+    await markAllAsRead();
+    handleMenuClose();
+  };
+
+  const handleDeleteAllRead = async () => {
+    await deleteAllRead();
+    handleMenuClose();
+  };
+
+  const unreadNotifications = notifications.filter((n) => !n.isRead);
+  const hasUnread = unreadNotifications.length > 0;
+  const hasRead = notifications.some((n) => n.isRead);
+
+  return (
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Шапка */}
+      <AppBar position="static" color="default" elevation={1}>
+        <Toolbar>
+          <IconButton edge="start" onClick={() => navigate('/')} sx={{ mr: 2 }}>
+            <ArrowBack />
+          </IconButton>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            Уведомления
+          </Typography>
+          <ThemeToggle />
+          <IconButton onClick={handleMenuOpen}>
+            <MoreVert />
+          </IconButton>
+          <Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={handleMenuClose}>
+            <MenuItem onClick={handleMarkAllAsRead} disabled={!hasUnread}>
+              Отметить все как прочитанные
+            </MenuItem>
+            <MenuItem onClick={handleDeleteAllRead} disabled={!hasRead}>
+              Удалить все прочитанные
+            </MenuItem>
+          </Menu>
+        </Toolbar>
+        <Tabs value={tabValue} onChange={handleTabChange} sx={{ borderTop: 1, borderColor: 'divider' }}>
+          <Tab label="Все" />
+          <Tab label={`Непрочитанные (${unreadNotifications.length})`} />
+        </Tabs>
+      </AppBar>
+
+      {/* Контент */}
+      <Box sx={{ flex: 1, overflow: 'auto', bgcolor: 'background.default' }}>
+        <Container maxWidth="md" sx={{ py: 0 }}>
+          {isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+              <CircularProgress />
+            </Box>
+          ) : notifications.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <Typography variant="h6" color="text.secondary">
+                {tabValue === 0 ? 'Нет уведомлений' : 'Нет непрочитанных уведомлений'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                {tabValue === 0
+                  ? 'Здесь будут отображаться ваши уведомления'
+                  : 'Все уведомления прочитаны'}
+              </Typography>
+            </Box>
+          ) : (
+            <List sx={{ p: 0 }}>
+              {notifications.map((notification) => (
+                <NotificationItem
+                  key={notification.id}
+                  notification={notification}
+                  onMarkAsRead={markAsRead}
+                  onDelete={deleteNotification}
+                />
+              ))}
+            </List>
+          )}
+        </Container>
+      </Box>
+    </Box>
+  );
+};
