@@ -3,21 +3,14 @@ import {
   Box,
   Container,
   Typography,
-  AppBar,
-  Toolbar,
-  IconButton,
   CircularProgress,
 } from '@mui/material';
-import { ArrowBack } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
 import { useFeedStore } from '../../store/feedStore';
 import { CreatePostForm } from '../../components/feed/CreatePostForm';
 import { PostCard } from '../../components/feed/PostCard';
-import { ThemeToggle } from '../../components/common/ThemeToggle';
-import { NotificationBadge } from '../../components/notifications/NotificationBadge';
+import { MainLayout } from '../../layouts/MainLayout';
 
 export const FeedPage = () => {
-  const navigate = useNavigate();
   const { posts, isLoading, hasMore, loadFeedPosts } = useFeedStore();
   const observerTarget = useRef<HTMLDivElement>(null);
 
@@ -54,24 +47,9 @@ export const FeedPage = () => {
   }, [handleObserver]);
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Шапка */}
-      <AppBar position="static" color="default" elevation={1}>
-        <Toolbar>
-          <IconButton edge="start" onClick={() => navigate('/')} sx={{ mr: 2 }}>
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Лента
-          </Typography>
-          <NotificationBadge />
-          <ThemeToggle />
-        </Toolbar>
-      </AppBar>
-
-      {/* Контент */}
-      <Box sx={{ flex: 1, overflow: 'auto', bgcolor: 'background.default' }}>
-        <Container maxWidth="md" sx={{ py: 3 }}>
+    <MainLayout>
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Container maxWidth="md" sx={{ py: 3, flex: 1, overflow: 'auto' }}>
           {/* Форма создания поста */}
           <CreatePostForm />
 
@@ -116,6 +94,6 @@ export const FeedPage = () => {
           )}
         </Container>
       </Box>
-    </Box>
+    </MainLayout>
   );
 };

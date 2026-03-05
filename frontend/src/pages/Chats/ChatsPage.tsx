@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Box, Grid, Paper, Typography, AppBar, Toolbar, IconButton, Divider, Fab, Menu, MenuItem } from '@mui/material';
-import { ArrowBack, Menu as MenuIcon, Add, GroupAdd, Settings, People, MoreVert } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { Box, Grid, Paper, Typography, IconButton, Divider, Fab, Menu, MenuItem } from '@mui/material';
+import { GroupAdd, Settings, People, MoreVert } from '@mui/icons-material';
 import { ChatList } from '../../components/chat/ChatList';
 import { MessageList } from '../../components/chat/MessageList';
 import { MessageInput } from '../../components/chat/MessageInput';
 import { CreateGroupChatModal } from '../../components/chat/CreateGroupChatModal';
 import { GroupSettingsModal } from '../../components/chat/GroupSettingsModal';
 import { MembersManagementModal } from '../../components/chat/MembersManagementModal';
-import { ThemeToggle } from '../../components/common/ThemeToggle';
-import { NotificationBadge } from '../../components/notifications/NotificationBadge';
+import { UserProfileModal } from '../../components/profile/UserProfileModal';
+import { MainLayout } from '../../layouts/MainLayout';
 import { useChatStore } from '../../store/chatStore';
 import { useSocket } from '../../contexts/SocketContext';
 import { Avatar } from '../../components/common/Avatar';
@@ -17,13 +16,13 @@ import { ChatType, MemberRole } from '../../types/chat.types';
 import { useAuthStore } from '../../store/authStore';
 
 export const ChatsPage = () => {
-  const navigate = useNavigate();
-  const { socket, isConnected } = useSocket();
+  const { socket } = useSocket();
   const { user } = useAuthStore();
   const { currentChatId, setCurrentChat, chats, setSocket, loadChats } = useChatStore();
   const [createGroupModalOpen, setCreateGroupModalOpen] = useState(false);
   const [groupSettingsModalOpen, setGroupSettingsModalOpen] = useState(false);
   const [membersModalOpen, setMembersModalOpen] = useState(false);
+  const [userProfileModalOpen, setUserProfileModalOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
   const currentChat = chats.find((c) => c.id === currentChatId);
@@ -39,7 +38,7 @@ export const ChatsPage = () => {
 
   // Получаем имя и аватар текущего чата
   const getChatInfo = () => {
-    if (!currentChat) return { name: '', avatar: undefined };
+    if (!currentChat) return { name: '', avatar: undefined, otherUser: undefined };
 
     if (currentChat.type === ChatType.PRIVATE) {
       const otherUser = currentChat.members.find((m) => m.userId !== user?.id)?.user;
@@ -47,6 +46,7 @@ export const ChatsPage = () => {
         name: otherUser?.username || 'Неизвестный',
         avatar: otherUser?.avatarUrl,
         isOnline: otherUser?.isOnline,
+        otherUser,
       };
     }
 
@@ -54,10 +54,17 @@ export const ChatsPage = () => {
       name: currentChat.name || 'Группа',
       avatar: currentChat.avatarUrl,
       isOnline: false,
+      otherUser: undefined,
     };
   };
 
   const chatInfo = getChatInfo();
+
+  const handleOpenUserProfile = () => {
+    if (currentChat?.type === ChatType.PRIVATE) {
+      setUserProfileModalOpen(true);
+    }
+  };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setMenuAnchorEl(event.currentTarget);
@@ -82,28 +89,10 @@ export const ChatsPage = () => {
   };
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Шапка */}
-      <AppBar position="static" color="default" elevation={1}>
-        <Toolbar>
-          <IconButton edge="start" onClick={() => navigate('/')} sx={{ mr: 2 }}>
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Чаты
-          </Typography>
-          {!isConnected && (
-            <Typography variant="caption" color="error" sx={{ mr: 2 }}>
-              Нет подключения
-            </Typography>
-          )}
-          <NotificationBadge />
-          <ThemeToggle />
-        </Toolbar>
-      </AppBar>
-
-      {/* Основной контент */}
-      <Grid container sx={{ flex: 1, overflow: 'hidden' }}>
+    <MainLayout>
+      <Box sx={{ height: 'calc(100vh - 0px)', display: 'flex', flexDirection: 'column' }}>
+        {/* Основной контент */}
+        <Grid container sx={{ flex: 1, overflow: 'hidden' }}>
         {/* Сайдбар с чатами */}
         <Grid
           item
@@ -161,22 +150,36 @@ export const ChatsPage = () => {
                   gap: 2,
                 }}
               >
-                <Avatar src={chatInfo.avatar} alt={chatInfo.name} size={40} online={chatInfo.isOnline} />
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    {chatInfo.name}
-                  </Typography>
-                  {currentChat?.type === ChatType.GROUP ? (
-                    <Typography variant="caption" color="text.secondary">
-                      {currentChat.members.length} участников
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    flex: 1,
+                    cursor: currentChat?.type === ChatType.PRIVATE ? 'pointer' : 'default',
+                    '&:hover': currentChat?.type === ChatType.PRIVATE ? {
+                      opacity: 0.8,
+                    } : {},
+                  }}
+                  onClick={currentChat?.type === ChatType.PRIVATE ? handleOpenUserProfile : undefined}
+                >
+                  <Avatar src={chatInfo.avatar || undefined} alt={chatInfo.name} size={40} online={chatInfo.isOnline} />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      {chatInfo.name}
                     </Typography>
-                  ) : (
-                    chatInfo.isOnline !== undefined && (
+                    {currentChat?.type === ChatType.GROUP ? (
                       <Typography variant="caption" color="text.secondary">
-                        {chatInfo.isOnline ? 'Онлайн' : 'Оффлайн'}
+                        {currentChat.members.length} участников
                       </Typography>
-                    )
-                  )}
+                    ) : (
+                      chatInfo.isOnline !== undefined && (
+                        <Typography variant="caption" color="text.secondary">
+                          {chatInfo.isOnline ? 'Онлайн' : 'Оффлайн'}
+                        </Typography>
+                      )
+                    )}
+                  </Box>
                 </Box>
                 {currentChat?.type === ChatType.GROUP && (
                   <>
@@ -254,6 +257,16 @@ export const ChatsPage = () => {
           />
         </>
       )}
+
+      {/* Модальное окно профиля пользователя */}
+      {currentChat && currentChat.type === ChatType.PRIVATE && chatInfo.otherUser && (
+        <UserProfileModal
+          open={userProfileModalOpen}
+          onClose={() => setUserProfileModalOpen(false)}
+          user={chatInfo.otherUser}
+        />
+      )}
     </Box>
+    </MainLayout>
   );
 };

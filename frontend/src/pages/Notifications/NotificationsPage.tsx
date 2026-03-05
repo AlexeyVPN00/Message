@@ -3,25 +3,21 @@ import {
   Box,
   Container,
   Typography,
-  AppBar,
-  Toolbar,
   IconButton,
   List,
   CircularProgress,
-  Button,
   Tabs,
   Tab,
   Menu,
   MenuItem,
+  Paper,
 } from '@mui/material';
-import { ArrowBack, MoreVert } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { MoreVert } from '@mui/icons-material';
 import { useNotificationsStore } from '../../store/notificationsStore';
 import { NotificationItem } from '../../components/notifications/NotificationItem';
-import { ThemeToggle } from '../../components/common/ThemeToggle';
+import { MainLayout } from '../../layouts/MainLayout';
 
 export const NotificationsPage = () => {
-  const navigate = useNavigate();
   const {
     notifications,
     isLoading,
@@ -67,67 +63,67 @@ export const NotificationsPage = () => {
   const hasRead = notifications.some((n) => n.isRead);
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Шапка */}
-      <AppBar position="static" color="default" elevation={1}>
-        <Toolbar>
-          <IconButton edge="start" onClick={() => navigate('/')} sx={{ mr: 2 }}>
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Уведомления
-          </Typography>
-          <ThemeToggle />
-          <IconButton onClick={handleMenuOpen}>
-            <MoreVert />
-          </IconButton>
-          <Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={handleMenuClose}>
-            <MenuItem onClick={handleMarkAllAsRead} disabled={!hasUnread}>
-              Отметить все как прочитанные
-            </MenuItem>
-            <MenuItem onClick={handleDeleteAllRead} disabled={!hasRead}>
-              Удалить все прочитанные
-            </MenuItem>
-          </Menu>
-        </Toolbar>
-        <Tabs value={tabValue} onChange={handleTabChange} sx={{ borderTop: 1, borderColor: 'divider' }}>
-          <Tab label="Все" />
-          <Tab label={`Непрочитанные (${unreadNotifications.length})`} />
-        </Tabs>
-      </AppBar>
+    <MainLayout>
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Container maxWidth="md" sx={{ py: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Заголовок и меню */}
+          <Box sx={{ display: 'flex', alignItems: 'center', py: 2, gap: 2 }}>
+            <Typography variant="h5" sx={{ flexGrow: 1, fontWeight: 600 }}>
+              Уведомления
+            </Typography>
+            <IconButton onClick={handleMenuOpen}>
+              <MoreVert />
+            </IconButton>
+            <Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={handleMenuClose}>
+              <MenuItem onClick={handleMarkAllAsRead} disabled={!hasUnread}>
+                Отметить все как прочитанные
+              </MenuItem>
+              <MenuItem onClick={handleDeleteAllRead} disabled={!hasRead}>
+                Удалить все прочитанные
+              </MenuItem>
+            </Menu>
+          </Box>
 
-      {/* Контент */}
-      <Box sx={{ flex: 1, overflow: 'auto', bgcolor: 'background.default' }}>
-        <Container maxWidth="md" sx={{ py: 0 }}>
-          {isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-              <CircularProgress />
-            </Box>
-          ) : notifications.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 8 }}>
-              <Typography variant="h6" color="text.secondary">
-                {tabValue === 0 ? 'Нет уведомлений' : 'Нет непрочитанных уведомлений'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                {tabValue === 0
-                  ? 'Здесь будут отображаться ваши уведомления'
-                  : 'Все уведомления прочитаны'}
-              </Typography>
-            </Box>
-          ) : (
-            <List sx={{ p: 0 }}>
-              {notifications.map((notification) => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
-                  onMarkAsRead={markAsRead}
-                  onDelete={deleteNotification}
-                />
-              ))}
-            </List>
-          )}
+          {/* Вкладки */}
+          <Paper elevation={0} sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+            <Tabs value={tabValue} onChange={handleTabChange}>
+              <Tab label="Все" />
+              <Tab label={`Непрочитанные (${unreadNotifications.length})`} />
+            </Tabs>
+          </Paper>
+
+          {/* Список уведомлений */}
+          <Box sx={{ flex: 1, overflow: 'auto' }}>
+            {isLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                <CircularProgress />
+              </Box>
+            ) : notifications.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 8 }}>
+                <Typography variant="h6" color="text.secondary">
+                  {tabValue === 0 ? 'Нет уведомлений' : 'Нет непрочитанных уведомлений'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  {tabValue === 0
+                    ? 'Здесь будут отображаться ваши уведомления'
+                    : 'Все уведомления прочитаны'}
+                </Typography>
+              </Box>
+            ) : (
+              <List sx={{ p: 0 }}>
+                {notifications.map((notification) => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    onMarkAsRead={markAsRead}
+                    onDelete={deleteNotification}
+                  />
+                ))}
+              </List>
+            )}
+          </Box>
         </Container>
       </Box>
-    </Box>
+    </MainLayout>
   );
 };

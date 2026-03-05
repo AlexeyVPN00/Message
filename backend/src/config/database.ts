@@ -6,11 +6,13 @@ import { ChatMember } from '../models/ChatMember.entity';
 import { Message } from '../models/Message.entity';
 import { Channel } from '../models/Channel.entity';
 import { ChannelSubscriber } from '../models/ChannelSubscriber.entity';
+import { ChannelPost } from '../models/ChannelPost.entity';
 import { Post } from '../models/Post.entity';
 import { PostLike } from '../models/PostLike.entity';
 import { Comment } from '../models/Comment.entity';
 import { Notification } from '../models/Notification.entity';
 import { FileAttachment } from '../models/FileAttachment.entity';
+import { Contact } from '../models/Contact.entity';
 
 dotenv.config();
 
@@ -30,11 +32,13 @@ export const AppDataSource = new DataSource({
     Message,
     Channel,
     ChannelSubscriber,
+    ChannelPost,
     Post,
     PostLike,
     Comment,
     Notification,
     FileAttachment,
+    Contact,
   ],
   migrations: ['src/database/migrations/**/*.ts'],
   subscribers: [],

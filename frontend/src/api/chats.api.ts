@@ -144,4 +144,23 @@ export const chatsApi = {
     });
     return response.data;
   },
+
+  /**
+   * Загрузить аватар группы
+   */
+  uploadGroupAvatar: async (chatId: string, file: File): Promise<{ avatarUrl: string; chat: Chat }> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const response = await apiClient.post<{ avatarUrl: string; chat: Chat }>(
+      `/upload/group-avatar/${chatId}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  },
 };

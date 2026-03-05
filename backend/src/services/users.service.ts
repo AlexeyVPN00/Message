@@ -56,6 +56,17 @@ export class UsersService {
       throw new Error('Пользователь не найден');
     }
 
+    // Проверяем уникальность телефона (если обновляется)
+    if (data.phone !== undefined && data.phone !== null && data.phone !== user.phone) {
+      const existingPhone = await this.userRepository.findOne({
+        where: { phone: data.phone },
+      });
+
+      if (existingPhone && existingPhone.id !== userId) {
+        throw new Error('Пользователь с таким номером телефона уже существует');
+      }
+    }
+
     // Обновляем только переданные поля
     if (data.firstName !== undefined) user.firstName = data.firstName;
     if (data.lastName !== undefined) user.lastName = data.lastName;

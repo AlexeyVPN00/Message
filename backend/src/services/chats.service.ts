@@ -86,22 +86,34 @@ export class ChatsService {
         let unreadCount = 0;
 
         if (currentMember?.lastReadMessageId) {
-          unreadCount = await this.messageRepository.count({
-            where: {
-              chatId: chat.id,
-              createdAt: lastMessage?.createdAt,
-            },
+          // Получаем последнее прочитанное сообщение
+          const lastReadMessage = await this.messageRepository.findOne({
+            where: { id: currentMember.lastReadMessageId },
           });
+
+          if (lastReadMessage) {
+            // Считаем сообщения, созданные ПОСЛЕ последнего прочитанного
+            // И НЕ отправленные самим пользователем
+            unreadCount = await this.messageRepository
+              .createQueryBuilder('message')
+              .where('message.chatId = :chatId', { chatId: chat.id })
+              .andWhere('message.createdAt > :createdAt', { createdAt: lastReadMessage.createdAt })
+              .andWhere('message.senderId != :userId', { userId })
+              .getCount();
+          }
         } else if (lastMessage) {
           // Если пользователь никогда не читал сообщения, считаем все непрочитанными
-          unreadCount = await this.messageRepository.count({
-            where: { chatId: chat.id },
-          });
+          // Но исключаем собственные сообщения
+          unreadCount = await this.messageRepository
+            .createQueryBuilder('message')
+            .where('message.chatId = :chatId', { chatId: chat.id })
+            .andWhere('message.senderId != :userId', { userId })
+            .getCount();
         }
 
         return {
           ...chat,
-          lastMessage,
+          lastMessage: lastMessage || undefined,
           unreadCount,
         };
       })

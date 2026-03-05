@@ -38,3 +38,6 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     });
   }
 };
+
+// Alias for backwards compatibility
+export const authMiddleware = authenticate;

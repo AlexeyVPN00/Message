@@ -14,6 +14,7 @@ import { Edit, Email, Phone, CalendarToday } from '@mui/icons-material';
 import { usersApi } from '../../api/users.api';
 import { User } from '../../types/user.types';
 import { Avatar } from '../../components/common/Avatar';
+import { MainLayout } from '../../layouts/MainLayout';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
@@ -52,50 +53,55 @@ export const ProfilePage = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="md">
-        <Box
-          sx={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      </Container>
+      <MainLayout>
+        <Container maxWidth="md">
+          <Box
+            sx={{
+              minHeight: '100vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        </Container>
+      </MainLayout>
     );
   }
 
   if (!user) {
     return (
-      <Container maxWidth="md">
-        <Box sx={{ py: 4 }}>
-          <Typography variant="h5">Пользователь не найден</Typography>
-          <Button onClick={() => navigate('/')} sx={{ mt: 2 }}>
-            На главную
-          </Button>
-        </Box>
-      </Container>
+      <MainLayout>
+        <Container maxWidth="md">
+          <Box sx={{ py: 4 }}>
+            <Typography variant="h5">Пользователь не найден</Typography>
+            <Button onClick={() => navigate('/')} sx={{ mt: 2 }}>
+              На главную
+            </Button>
+          </Box>
+        </Container>
+      </MainLayout>
     );
   }
 
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username;
 
   return (
-    <Container maxWidth="md">
-      <Box sx={{ py: 4 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
-          {/* Шапка профиля */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 3,
-              mb: 3,
-            }}
-          >
-            <Avatar src={user.avatarUrl} alt={fullName} size={120} online={user.isOnline} />
+    <MainLayout>
+      <Container maxWidth="md">
+        <Box sx={{ py: 4 }}>
+          <Paper elevation={3} sx={{ p: 4 }}>
+            {/* Шапка профиля */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+                mb: 3,
+              }}
+            >
+              <Avatar src={user.avatarUrl || undefined} alt={fullName} size={120} online={user.isOnline} />
 
             <Box sx={{ flex: 1 }}>
               <Typography variant="h4" gutterBottom>
@@ -187,5 +193,6 @@ export const ProfilePage = () => {
         </Paper>
       </Box>
     </Container>
+    </MainLayout>
   );
 };

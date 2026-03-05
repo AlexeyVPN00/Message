@@ -9,17 +9,32 @@ export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
 
   async register(data: RegisterDto): Promise<AuthResponse> {
-    // Check if user already exists
-    const existingUser = await this.userRepository.findOne({
-      where: [{ email: data.email }, { username: data.username }],
+    // Check if email already exists
+    const existingEmail = await this.userRepository.findOne({
+      where: { email: data.email },
     });
 
-    if (existingUser) {
-      if (existingUser.email === data.email) {
-        throw new Error('Email already registered');
-      }
-      if (existingUser.username === data.username) {
-        throw new Error('Username already taken');
+    if (existingEmail) {
+      throw new Error('Пользователь с таким email уже существует');
+    }
+
+    // Check if username already exists
+    const existingUsername = await this.userRepository.findOne({
+      where: { username: data.username },
+    });
+
+    if (existingUsername) {
+      throw new Error('Пользователь с таким username (@) уже существует');
+    }
+
+    // Check if phone already exists (if provided)
+    if (data.phone) {
+      const existingPhone = await this.userRepository.findOne({
+        where: { phone: data.phone },
+      });
+
+      if (existingPhone) {
+        throw new Error('Пользователь с таким номером телефона уже существует');
       }
     }
 
@@ -33,6 +48,7 @@ export class AuthService {
       passwordHash,
       firstName: data.firstName || null,
       lastName: data.lastName || null,
+      phone: data.phone || null,
     });
 
     await this.userRepository.save(user);

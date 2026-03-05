@@ -61,18 +61,27 @@ export const MessageList = ({ chatId }: MessageListProps) => {
       sx={{
         flex: 1,
         overflowY: 'auto',
-        p: 2,
         display: 'flex',
-        flexDirection: 'column',
+        justifyContent: 'center',
       }}
     >
-      {chatMessages.map((message) => (
-        <MessageBubble key={message.id} message={message} />
-      ))}
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: '900px',
+          p: 3,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {chatMessages.map((message) => (
+          <MessageBubble key={message.id} message={message} />
+        ))}
 
-      <TypingIndicator typingUsers={typingInThisChat} />
+        <TypingIndicator typingUsers={typingInThisChat} />
 
-      <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} />
+      </Box>
     </Box>
   );
 };

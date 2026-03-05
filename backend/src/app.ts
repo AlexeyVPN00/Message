@@ -13,13 +13,26 @@ import messagesRoutes from './routes/messages.routes';
 import channelsRoutes from './routes/channels.routes';
 import postsRoutes from './routes/posts.routes';
 import notificationsRoutes from './routes/notifications.routes';
+import contactsRoutes from './routes/contacts.routes';
 
 dotenv.config();
 
 const app: Application = express();
 
-// Security middleware
-app.use(helmet());
+// Security middleware - разрешаем загрузку изображений
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'blob:', 'http:', 'https:'],
+        mediaSrc: ["'self'", 'data:', 'blob:'],
+        connectSrc: ["'self'", 'ws:', 'wss:'],
+      },
+    },
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 // CORS configuration
 app.use(
@@ -60,6 +73,7 @@ app.use('/api/messages', messagesRoutes);
 app.use('/api/channels', channelsRoutes);
 app.use('/api/posts', postsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/contacts', contactsRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

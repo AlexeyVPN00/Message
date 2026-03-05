@@ -38,11 +38,17 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
           borderTopLeftRadius: isOwnMessage ? 16 : 0,
         }}
       >
-        {!isOwnMessage && (
-          <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5 }}>
-            {message.sender.username}
-          </Typography>
-        )}
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 600,
+            display: 'block',
+            mb: 0.5,
+            opacity: isOwnMessage ? 0.9 : 1,
+          }}
+        >
+          {message.sender.username}
+        </Typography>
 
         {message.replyToMessage && (
           <Box

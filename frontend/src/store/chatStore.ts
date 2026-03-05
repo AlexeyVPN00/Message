@@ -3,6 +3,7 @@ import { Socket } from 'socket.io-client';
 import { chatsApi } from '../api/chats.api';
 import { Chat, Message, TypingUser } from '../types/chat.types';
 import toast from 'react-hot-toast';
+import { useAuthStore } from './authStore';
 
 interface ChatState {
   chats: Chat[];
@@ -16,6 +17,7 @@ interface ChatState {
   setSocket: (socket: Socket | null) => void;
   loadChats: () => Promise<void>;
   loadMessages: (chatId: string) => Promise<void>;
+  markMessagesAsRead: (chatId: string) => Promise<void>;
   setCurrentChat: (chatId: string | null) => void;
   createPrivateChat: (participantId: string) => Promise<Chat | null>;
   createGroupChat: (name: string, description: string | undefined, memberIds: string[]) => Promise<Chat | null>;
@@ -96,6 +98,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
         },
         isLoading: false,
       }));
+
+      // Автоматически отмечаем последнее сообщение как прочитанное
+      if (messages.length > 0) {
+        await get().markMessagesAsRead(chatId);
+      }
     } catch (error) {
       console.error('Error loading messages:', error);
       toast.error('Ошибка при загрузке сообщений');
@@ -103,11 +110,32 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
+  markMessagesAsRead: async (chatId: string) => {
+    try {
+      const messages = get().messages[chatId];
+      if (!messages || messages.length === 0) return;
+
+      const lastMessage = messages[messages.length - 1];
+      await chatsApi.markAsRead(lastMessage.id);
+
+      // Обнуляем счетчик непрочитанных
+      set((state) => ({
+        chats: state.chats.map((chat) =>
+          chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
+        ),
+      }));
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  },
+
   setCurrentChat: (chatId) => {
-    const { currentChatId, leaveChat, joinChat } = get();
+    const { currentChatId, leaveChat, joinChat, markMessagesAsRead } = get();
 
     // Покидаем предыдущий чат
     if (currentChatId) {
+      // Перед уходом отмечаем все сообщения как прочитанные
+      markMessagesAsRead(currentChatId);
       leaveChat(currentChatId);
     }
 
@@ -190,6 +218,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   handleNewMessage: (message) => {
+    const currentUserId = useAuthStore.getState().user?.id;
+
     set((state) => {
       const chatMessages = state.messages[message.chatId] || [];
 
@@ -198,18 +228,37 @@ export const useChatStore = create<ChatState>((set, get) => ({
         return state;
       }
 
+      // Определяем, нужно ли увеличивать счетчик непрочитанных:
+      // - Не увеличиваем, если это текущий активный чат
+      // - Не увеличиваем, если это сообщение от самого пользователя
+      const isCurrentChat = state.currentChatId === message.chatId;
+      const isOwnMessage = message.senderId === currentUserId;
+      const shouldIncreaseUnreadCount = !isCurrentChat && !isOwnMessage;
+
       return {
         messages: {
           ...state.messages,
           [message.chatId]: [...chatMessages, message],
         },
-        chats: state.chats.map((chat) =>
-          chat.id === message.chatId
-            ? { ...chat, lastMessage: message, updatedAt: message.createdAt }
-            : chat
-        ),
+        chats: state.chats.map((chat) => {
+          if (chat.id === message.chatId) {
+            return {
+              ...chat,
+              lastMessage: message,
+              updatedAt: message.createdAt,
+              unreadCount: shouldIncreaseUnreadCount ? (chat.unreadCount || 0) + 1 : 0,
+            };
+          }
+          return chat;
+        }),
       };
     });
+
+    // Если это текущий активный чат, автоматически отмечаем как прочитанное
+    const { currentChatId, markMessagesAsRead } = get();
+    if (currentChatId === message.chatId) {
+      markMessagesAsRead(message.chatId);
+    }
   },
 
   handleMessageUpdated: (message) => {

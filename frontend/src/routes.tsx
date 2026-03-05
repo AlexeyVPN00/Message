@@ -10,6 +10,7 @@ const RegisterPage = lazy(() => import('./pages/Auth/Register').then(m => ({ def
 const ProfilePage = lazy(() => import('./pages/Profile/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const EditProfile = lazy(() => import('./pages/Profile/EditProfile').then(m => ({ default: m.EditProfile })));
 const ChatsPage = lazy(() => import('./pages/Chats/ChatsPage').then(m => ({ default: m.ChatsPage })));
+const ContactsPage = lazy(() => import('./pages/Contacts/ContactsPage').then(m => ({ default: m.ContactsPage })));
 const ChannelsPage = lazy(() => import('./pages/Channels/ChannelsPage').then(m => ({ default: m.ChannelsPage })));
 const ChannelView = lazy(() => import('./pages/Channels/ChannelView').then(m => ({ default: m.ChannelView })));
 const FeedPage = lazy(() => import('./pages/Feed/FeedPage').then(m => ({ default: m.FeedPage })));
@@ -45,6 +46,16 @@ export const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <ChatsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Contacts route */}
+      <Route
+        path="/contacts"
+        element={
+          <ProtectedRoute>
+            <ContactsPage />
           </ProtectedRoute>
         }
       />

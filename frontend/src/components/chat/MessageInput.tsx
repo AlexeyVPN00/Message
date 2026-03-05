@@ -10,7 +10,7 @@ interface MessageInputProps {
 export const MessageInput = ({ chatId }: MessageInputProps) => {
   const [message, setMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<number | null>(null);
 
   const { sendMessage, emitTyping, emitStopTyping } = useChatStore();
 
@@ -56,7 +56,7 @@ export const MessageInput = ({ chatId }: MessageInputProps) => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -76,38 +76,49 @@ export const MessageInput = ({ chatId }: MessageInputProps) => {
   }, [chatId, isTyping, emitStopTyping]);
 
   return (
-    <Paper
-      component="form"
-      onSubmit={handleSubmit}
+    <Box
       sx={{
-        p: 2,
-        display: 'flex',
-        alignItems: 'flex-end',
-        gap: 1,
         borderTop: 1,
         borderColor: 'divider',
+        display: 'flex',
+        justifyContent: 'center',
+        bgcolor: 'background.paper',
       }}
     >
-      <TextField
-        fullWidth
-        multiline
-        maxRows={4}
-        placeholder="Напишите сообщение..."
-        value={message}
-        onChange={handleChange}
-        onKeyPress={handleKeyPress}
-        variant="outlined"
-        size="small"
-      />
-
-      <IconButton
-        type="submit"
-        color="primary"
-        disabled={message.trim().length === 0}
-        sx={{ mb: 0.5 }}
+      <Paper
+        component="form"
+        onSubmit={handleSubmit}
+        elevation={0}
+        sx={{
+          width: '100%',
+          maxWidth: '900px',
+          p: 2,
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: 1,
+        }}
       >
-        <Send />
-      </IconButton>
-    </Paper>
+        <TextField
+          fullWidth
+          multiline
+          maxRows={4}
+          placeholder="Напишите сообщение..."
+          value={message}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          variant="outlined"
+          size="small"
+        />
+
+        <IconButton
+          type="submit"
+          color="primary"
+          disabled={message.trim().length === 0}
+          sx={{ mb: 0.5 }}
+        >
+          <Send />
+        </IconButton>
+      </Paper>
+    </Box>
   );
 };

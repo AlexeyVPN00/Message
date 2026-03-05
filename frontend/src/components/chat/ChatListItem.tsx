@@ -67,7 +67,7 @@ export const ChatListItem = ({ chat, isActive, onClick }: ChatListItemProps) => 
               },
             }}
           >
-            <Avatar src={avatarUrl} alt={chatName} size={48} />
+            <Avatar src={avatarUrl || undefined} alt={chatName} size={48} />
           </Badge>
         </ListItemAvatar>
 
@@ -94,16 +94,18 @@ export const ChatListItem = ({ chat, isActive, onClick }: ChatListItemProps) => 
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   fontSize: '0.85rem',
+                  flex: 1,
                 }}
               >
                 {lastMessagePreview}
               </Typography>
-              {chat.unreadCount && chat.unreadCount > 0 && (
+              {chat.unreadCount !== undefined && chat.unreadCount > 0 && (
                 <Badge
                   badgeContent={chat.unreadCount}
                   color="primary"
                   sx={{
                     ml: 1,
+                    flexShrink: 0,
                     '& .MuiBadge-badge': {
                       fontSize: '0.7rem',
                       height: 18,

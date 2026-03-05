@@ -20,7 +20,26 @@ export const Avatar = React.memo(({ src, alt = 'User', size = 40, online }: Avat
       sx={{
         width: size,
         height: size,
-        bgcolor: 'primary.main',
+        background: avatarUrl
+          ? undefined
+          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        border: '2px solid',
+        borderColor: (theme) =>
+          theme.palette.mode === 'light'
+            ? 'rgba(102, 126, 234, 0.2)'
+            : 'rgba(139, 159, 245, 0.3)',
+        boxShadow: (theme) =>
+          theme.palette.mode === 'light'
+            ? '0 2px 8px rgba(102, 126, 234, 0.15)'
+            : '0 2px 8px rgba(139, 159, 245, 0.25)',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          transform: 'scale(1.05)',
+          boxShadow: (theme) =>
+            theme.palette.mode === 'light'
+              ? '0 4px 12px rgba(102, 126, 234, 0.25)'
+              : '0 4px 12px rgba(139, 159, 245, 0.35)',
+        },
       }}
     >
       {!avatarUrl && <Person />}

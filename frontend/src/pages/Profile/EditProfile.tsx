@@ -16,6 +16,8 @@ import { useAuthStore } from '../../store/authStore';
 import { usersApi } from '../../api/users.api';
 import { uploadApi } from '../../api/upload.api';
 import { Avatar } from '../../components/common/Avatar';
+import { MainLayout } from '../../layouts/MainLayout';
+import { ImageCropModal } from '../../components/common/ImageCropModal';
 import toast from 'react-hot-toast';
 
 export const EditProfile = () => {
@@ -32,6 +34,8 @@ export const EditProfile = () => {
 
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string>('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -59,7 +63,7 @@ export const EditProfile = () => {
     }
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
@@ -75,8 +79,25 @@ export const EditProfile = () => {
       return;
     }
 
+    // Создать URL для превью изображения
+    const imageUrl = URL.createObjectURL(file);
+    setSelectedImageUrl(imageUrl);
+    setCropModalOpen(true);
+
+    // Очистить input для повторного выбора того же файла
+    e.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedImageBlob: Blob) => {
+    if (!user) return;
+
     try {
       setUploadingAvatar(true);
+      setCropModalOpen(false);
+
+      // Создать File из Blob
+      const file = new File([croppedImageBlob], 'avatar.jpg', { type: 'image/jpeg' });
+
       const response = await uploadApi.uploadAvatar(file);
       setUser(response.user);
       toast.success('Аватар успешно загружен');
@@ -85,7 +106,17 @@ export const EditProfile = () => {
       toast.error('Ошибка при загрузке аватара');
     } finally {
       setUploadingAvatar(false);
+      // Освободить URL
+      URL.revokeObjectURL(selectedImageUrl);
+      setSelectedImageUrl('');
     }
+  };
+
+  const handleCropCancel = () => {
+    setCropModalOpen(false);
+    // Освободить URL
+    URL.revokeObjectURL(selectedImageUrl);
+    setSelectedImageUrl('');
   };
 
   const handleDeleteAvatar = async () => {
@@ -124,13 +155,14 @@ export const EditProfile = () => {
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username;
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ py: 4 }}>
-        <Button startIcon={<ArrowBack />} onClick={() => navigate('/profile')} sx={{ mb: 2 }}>
-          Назад к профилю
-        </Button>
+    <MainLayout>
+      <Container maxWidth="sm">
+        <Box sx={{ py: 4 }}>
+          <Button startIcon={<ArrowBack />} onClick={() => navigate('/profile')} sx={{ mb: 2 }}>
+            Назад к профилю
+          </Button>
 
-        <Paper elevation={3} sx={{ p: 4 }}>
+          <Paper elevation={3} sx={{ p: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom>
             Редактирование профиля
           </Typography>
@@ -146,7 +178,7 @@ export const EditProfile = () => {
             }}
           >
             <Box sx={{ position: 'relative' }}>
-              <Avatar src={user.avatarUrl} alt={fullName} size={120} />
+              <Avatar src={user.avatarUrl || undefined} alt={fullName} size={120} />
               {uploadingAvatar && (
                 <CircularProgress
                   size={120}
@@ -245,6 +277,16 @@ export const EditProfile = () => {
           </Box>
         </Paper>
       </Box>
+
+      {/* Модальное окно кадрирования */}
+      <ImageCropModal
+        open={cropModalOpen}
+        imageUrl={selectedImageUrl}
+        onClose={handleCropCancel}
+        onCropComplete={handleCropComplete}
+        aspectRatio={1}
+      />
     </Container>
+    </MainLayout>
   );
 };
