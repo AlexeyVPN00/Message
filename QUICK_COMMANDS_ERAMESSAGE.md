@@ -4,8 +4,9 @@
 
 ### Ваши данные:
 ```
-IP сервера: 45.87.246.77
+IP сервера: 185.246.118.162
 Домен: eramessage.ru
+Пароль root: toxP0vOl610L
 ```
 
 ---
@@ -15,8 +16,8 @@ IP сервера: 45.87.246.77
 Добавьте 2 записи:
 
 ```
-A    @      45.87.246.77
-A    www    45.87.246.77
+A    @      185.246.118.162
+A    www    185.246.118.162
 ```
 
 ---
@@ -24,7 +25,8 @@ A    www    45.87.246.77
 ## 2️⃣ Подключение к серверу
 
 ```bash
-ssh root@45.87.246.77
+ssh root@185.246.118.162
+# Пароль: toxP0vOl610L
 ```
 
 ---
@@ -42,7 +44,8 @@ apt install docker-compose git nano -y
 
 ### С вашего компьютера (PowerShell):
 ```bash
-scp -r c:\Users\outsi\Desktop\vibecoding\messenger root@45.87.246.77:/root/
+scp -r c:\Users\outsi\Desktop\vibecoding\messenger root@185.246.118.162:/root/
+# Пароль: toxP0vOl610L
 ```
 
 ### На сервере:

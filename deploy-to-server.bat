@@ -5,7 +5,7 @@ echo 🚀 Развертывание на eramessage.ru
 echo ================================
 echo.
 
-set SERVER_IP=45.87.246.77
+set SERVER_IP=185.246.118.162
 set PROJECT_PATH=c:\Users\outsi\Desktop\vibecoding\messenger
 
 echo 📦 Загружаю проект на сервер...
