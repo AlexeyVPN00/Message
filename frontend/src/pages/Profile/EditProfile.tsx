@@ -67,6 +67,13 @@ export const EditProfile = () => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
+    console.log('📸 Selected file:', {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      lastModified: file.lastModified
+    });
+
     // Проверка типа файла
     if (!file.type.startsWith('image/')) {
       toast.error('Пожалуйста, выберите изображение');
@@ -79,10 +86,16 @@ export const EditProfile = () => {
       return;
     }
 
-    // Создать URL для превью изображения
-    const imageUrl = URL.createObjectURL(file);
-    setSelectedImageUrl(imageUrl);
-    setCropModalOpen(true);
+    try {
+      // Создать URL для превью изображения
+      const imageUrl = URL.createObjectURL(file);
+      console.log('🖼️ Image URL created:', imageUrl);
+      setSelectedImageUrl(imageUrl);
+      setCropModalOpen(true);
+    } catch (error) {
+      console.error('❌ Error creating image URL:', error);
+      toast.error('Ошибка при загрузке изображения');
+    }
 
     // Очистить input для повторного выбора того же файла
     e.target.value = '';
@@ -95,15 +108,28 @@ export const EditProfile = () => {
       setUploadingAvatar(true);
       setCropModalOpen(false);
 
+      console.log('✂️ Cropped blob:', {
+        size: croppedImageBlob.size,
+        type: croppedImageBlob.type
+      });
+
       // Создать File из Blob
       const file = new File([croppedImageBlob], 'avatar.jpg', { type: 'image/jpeg' });
 
+      console.log('📤 Uploading file:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+
       const response = await uploadApi.uploadAvatar(file);
+      console.log('✅ Upload success:', response);
       setUser(response.user);
       toast.success('Аватар успешно загружен');
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast.error('Ошибка при загрузке аватара');
+    } catch (error: any) {
+      console.error('❌ Error uploading avatar:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Неизвестная ошибка';
+      toast.error(`Ошибка при загрузке аватара: ${errorMessage}`);
     } finally {
       setUploadingAvatar(false);
       // Освободить URL
@@ -217,6 +243,7 @@ export const EditProfile = () => {
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              capture="environment"
               style={{ display: 'none' }}
               onChange={handleAvatarChange}
             />

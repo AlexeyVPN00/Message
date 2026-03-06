@@ -44,13 +44,20 @@ export const ImageCropModal = ({
   }, []);
 
   const createCroppedImage = async () => {
-    if (!croppedAreaPixels) return;
+    if (!croppedAreaPixels) {
+      console.error('❌ No cropped area pixels');
+      return;
+    }
 
     try {
+      console.log('✂️ Starting crop with pixels:', croppedAreaPixels);
       const croppedImageBlob = await getCroppedImg(imageUrl, croppedAreaPixels);
+      console.log('✅ Crop successful, blob size:', croppedImageBlob.size);
       onCropComplete(croppedImageBlob);
     } catch (error) {
-      console.error('Error creating cropped image:', error);
+      console.error('❌ Error creating cropped image:', error);
+      // Показываем более подробную ошибку
+      alert(`Ошибка при обработке изображения: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
     }
   };
 
@@ -94,17 +101,31 @@ export const ImageCropModal = ({
 
 // Функция для создания кадрированного изображения
 const getCroppedImg = async (imageSrc: string, pixelCrop: Area): Promise<Blob> => {
+  console.log('🖼️ Loading image:', imageSrc.substring(0, 50) + '...');
   const image = await createImage(imageSrc);
+  console.log('✅ Image loaded:', {
+    width: image.width,
+    height: image.height,
+    naturalWidth: image.naturalWidth,
+    naturalHeight: image.naturalHeight
+  });
+
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
 
   if (!ctx) {
-    throw new Error('No 2d context');
+    throw new Error('No 2d context available');
   }
 
   // Устанавливаем размер canvas равным размеру кадрированной области
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
+
+  console.log('📐 Canvas size:', {
+    width: canvas.width,
+    height: canvas.height,
+    cropArea: pixelCrop
+  });
 
   // Рисуем кадрированное изображение
   ctx.drawImage(
@@ -119,15 +140,25 @@ const getCroppedImg = async (imageSrc: string, pixelCrop: Area): Promise<Blob> =
     pixelCrop.height
   );
 
+  console.log('🎨 Image drawn on canvas');
+
   // Конвертируем canvas в blob
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        reject(new Error('Canvas is empty'));
-        return;
-      }
-      resolve(blob);
-    }, 'image/jpeg', 0.95);
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error('Canvas is empty - failed to create blob'));
+          return;
+        }
+        console.log('✅ Blob created:', {
+          size: blob.size,
+          type: blob.type
+        });
+        resolve(blob);
+      },
+      'image/jpeg',
+      0.92 // Немного снижаем качество для мобильных
+    );
   });
 };
 
@@ -135,7 +166,22 @@ const getCroppedImg = async (imageSrc: string, pixelCrop: Area): Promise<Blob> =
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image();
-    image.addEventListener('load', () => resolve(image));
-    image.addEventListener('error', (error) => reject(error));
+
+    // Добавляем crossOrigin для blob URLs
+    image.crossOrigin = 'anonymous';
+
+    image.addEventListener('load', () => {
+      console.log('✅ Image loaded successfully');
+      resolve(image);
+    });
+
+    image.addEventListener('error', (error) => {
+      console.error('❌ Image load error:', error);
+      reject(new Error(`Failed to load image: ${error.type}`));
+    });
+
+    // Устанавливаем src последним
     image.src = url;
+
+    console.log('🔄 Loading image from:', url.substring(0, 50) + '...');
   });
