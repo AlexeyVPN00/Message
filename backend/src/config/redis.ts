@@ -8,6 +8,7 @@ export const redisClient = createClient({
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6380'),
   },
+  password: process.env.REDIS_PASSWORD || undefined,
 });
 
 redisClient.on('error', (err) => console.error('❌ Redis Client Error:', err));
