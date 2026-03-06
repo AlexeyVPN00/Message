@@ -7,6 +7,12 @@ yarn.lock
 .env
 .env.local
 .env.*.local
+.env.production
+GITHUB_SECRETS.txt
+
+# Temporary setup files
+.ssh-setup.exp
+.add-ssh-key.py
 
 # Logs
 logs/
