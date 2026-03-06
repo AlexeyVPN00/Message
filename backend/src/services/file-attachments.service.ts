@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { AppDataSource } from '../config/database';
 import { FileAttachment, AttachmentType, AttachmentContext } from '../models/FileAttachment.entity';
 import { uploadService } from './upload.service';
@@ -34,6 +34,38 @@ export class FileAttachmentsService {
       where: { context, contextId },
       order: { createdAt: 'ASC' },
     });
+  }
+
+  /**
+   * FIX N+1: Batch load attachments for multiple context IDs
+   * Instead of N queries (one per message), this makes 1 query for all messages
+   */
+  async getAttachmentsByContextIds(
+    context: AttachmentContext,
+    contextIds: string[]
+  ): Promise<Map<string, FileAttachment[]>> {
+    if (contextIds.length === 0) {
+      return new Map();
+    }
+
+    const attachments = await this.attachmentRepository.find({
+      where: {
+        context,
+        contextId: In(contextIds)
+      },
+      order: { createdAt: 'ASC' },
+    });
+
+    // Group attachments by contextId
+    const attachmentMap = new Map<string, FileAttachment[]>();
+
+    for (const attachment of attachments) {
+      const existing = attachmentMap.get(attachment.contextId) || [];
+      existing.push(attachment);
+      attachmentMap.set(attachment.contextId, existing);
+    }
+
+    return attachmentMap;
   }
 
   async deleteAttachmentsByContext(

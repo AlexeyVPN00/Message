@@ -1,6 +1,7 @@
 import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
+import { safeDeleteFile } from '../utils/file-path';
 
 export interface ProcessImageOptions {
   width?: number;
@@ -26,9 +27,14 @@ export class UploadService {
         .jpeg({ quality })
         .toFile(outputPath);
 
-      // Удаляем оригинал
-      if (inputPath !== outputPath && fs.existsSync(inputPath)) {
-        fs.unlinkSync(inputPath);
+      // Удаляем оригинал (с защитой от path traversal)
+      if (inputPath !== outputPath) {
+        try {
+          safeDeleteFile(inputPath);
+        } catch (error) {
+          console.warn('Could not delete original file after processing:', error);
+          // Не бросаем ошибку, т.к. обработанный файл уже создан
+        }
       }
 
       return outputPath;
@@ -58,16 +64,17 @@ export class UploadService {
   }
 
   /**
-   * Удалить файл
+   * Удалить файл (с защитой от path traversal)
    */
   async deleteFile(filePath: string): Promise<void> {
     try {
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
+      // Используем безопасную функцию удаления с валидацией пути
+      // Это предотвращает path traversal атаки (../../../etc/passwd)
+      safeDeleteFile(filePath);
     } catch (error) {
       console.error('Error deleting file:', error);
-      throw new Error('Ошибка при удалении файла');
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка при удалении файла';
+      throw new Error(errorMessage);
     }
   }
 
@@ -93,18 +100,14 @@ export class UploadService {
   }
 
   /**
-   * Удалить старый аватар если есть
+   * Удалить старый аватар если есть (с защитой от path traversal)
    */
   async deleteOldAvatar(avatarUrl?: string): Promise<void> {
     if (!avatarUrl) return;
 
     try {
-      // Извлекаем путь к файлу из URL
-      const filePath = path.join(__dirname, '../../uploads', avatarUrl.replace('/uploads/', ''));
-
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
+      // Безопасное удаление с валидацией пути
+      safeDeleteFile(avatarUrl);
     } catch (error) {
       console.error('Error deleting old avatar:', error);
       // Не бросаем ошибку, чтобы не прерывать загрузку нового аватара

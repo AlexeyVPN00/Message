@@ -1,12 +1,16 @@
 import { Router } from 'express';
 import { uploadController } from '../controllers/upload.controller';
 import { authenticate } from '../middlewares/auth.middleware';
+import { uploadLimiter } from '../config/rate-limit';
 import { uploadAvatar, uploadMessageFile, uploadMessageFiles, uploadPostFile } from '../middlewares/upload.middleware';
 
 const router = Router();
 
 // Все маршруты требуют аутентификации
 router.use(authenticate);
+
+// Rate limiting для всех upload endpoints (20 uploads/hour)
+router.use(uploadLimiter);
 
 // POST /api/upload/avatar - Загрузить аватар
 router.post('/avatar', uploadAvatar, uploadController.uploadAvatar.bind(uploadController));

@@ -26,6 +26,8 @@ jobs:
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy application
+        env:
+          GITHUB_SHA: ${{ github.sha }}
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} << 'ENDSSH'
             cd ${{ secrets.DEPLOY_PATH || '/opt/messenger' }}
@@ -43,12 +45,18 @@ jobs:
             JWT_ACCESS_EXPIRES_IN=${{ secrets.JWT_ACCESS_EXPIRES_IN }}
             JWT_REFRESH_EXPIRES_IN=${{ secrets.JWT_REFRESH_EXPIRES_IN }}
             FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            GITHUB_SHA=$GITHUB_SHA
             EOF
 
-            echo "🐳 Building and starting Docker containers..."
-            docker-compose -f docker-compose.production.yml down
-            docker-compose -f docker-compose.production.yml build --no-cache
-            docker-compose -f docker-compose.production.yml up -d
+            echo "🔐 Logging into GitHub Container Registry..."
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            echo "📥 Pulling latest Docker images from GHCR..."
+            docker pull ghcr.io/${{ github.repository }}/backend:main
+            docker pull ghcr.io/${{ github.repository }}/frontend:main
+
+            echo "🐳 Starting Docker containers with zero-downtime..."
+            docker-compose -f docker-compose.production.yml up -d --no-build
 
             echo "🧹 Cleaning up old images..."
             docker image prune -f

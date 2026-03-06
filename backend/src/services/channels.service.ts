@@ -3,6 +3,7 @@ import { Channel } from '../models/Channel.entity';
 import { ChannelSubscriber } from '../models/ChannelSubscriber.entity';
 import { ChannelPost } from '../models/ChannelPost.entity';
 import { User } from '../models/User.entity';
+import { sanitizeHtml } from '../utils/sanitize';
 
 export interface CreateChannelDto {
   name: string;
@@ -80,8 +81,8 @@ export class ChannelsService {
    */
   async createChannel(ownerId: string, data: CreateChannelDto): Promise<Channel> {
     const channel = this.channelRepository.create({
-      name: data.name,
-      description: data.description,
+      name: sanitizeHtml(data.name), // XSS protection
+      description: data.description ? sanitizeHtml(data.description) : undefined, // XSS protection
       isPrivate: data.isPrivate || false,
       ownerId,
     });
@@ -111,11 +112,11 @@ export class ChannelsService {
     }
 
     if (data.name !== undefined) {
-      channel.name = data.name;
+      channel.name = sanitizeHtml(data.name); // XSS protection
     }
 
     if (data.description !== undefined) {
-      channel.description = data.description;
+      channel.description = sanitizeHtml(data.description); // XSS protection
     }
 
     if (data.avatarUrl !== undefined) {
@@ -245,7 +246,7 @@ export class ChannelsService {
     const post = this.postRepository.create({
       channelId,
       authorId: userId,
-      content: data.content,
+      content: sanitizeHtml(data.content), // XSS protection
     });
 
     await this.postRepository.save(post);

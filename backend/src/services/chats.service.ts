@@ -50,6 +50,7 @@ export class ChatsService {
 
   /**
    * Получить список чатов пользователя
+   * FIX N+1: Optimized from 1+3N queries to 5 queries total (regardless of N)
    */
   async getUserChats(userId: string): Promise<ChatWithDetails[]> {
     // Получаем все чаты, где пользователь является участником
@@ -71,55 +72,142 @@ export class ChatsService {
       order: { updatedAt: 'DESC' },
     });
 
-    // Для каждого чата получаем последнее сообщение и количество непрочитанных
-    const chatsWithDetails: ChatWithDetails[] = await Promise.all(
-      chats.map(async (chat) => {
-        // Последнее сообщение
-        const lastMessage = await this.messageRepository.findOne({
-          where: { chatId: chat.id },
-          order: { createdAt: 'DESC' },
-          relations: ['sender'],
-        });
-
-        // Количество непрочитанных сообщений
-        const currentMember = chatMembers.find((cm) => cm.chatId === chat.id);
-        let unreadCount = 0;
-
-        if (currentMember?.lastReadMessageId) {
-          // Получаем последнее прочитанное сообщение
-          const lastReadMessage = await this.messageRepository.findOne({
-            where: { id: currentMember.lastReadMessageId },
-          });
-
-          if (lastReadMessage) {
-            // Считаем сообщения, созданные ПОСЛЕ последнего прочитанного
-            // И НЕ отправленные самим пользователем
-            unreadCount = await this.messageRepository
-              .createQueryBuilder('message')
-              .where('message.chatId = :chatId', { chatId: chat.id })
-              .andWhere('message.createdAt > :createdAt', { createdAt: lastReadMessage.createdAt })
-              .andWhere('message.senderId != :userId', { userId })
-              .getCount();
-          }
-        } else if (lastMessage) {
-          // Если пользователь никогда не читал сообщения, считаем все непрочитанными
-          // Но исключаем собственные сообщения
-          unreadCount = await this.messageRepository
-            .createQueryBuilder('message')
-            .where('message.chatId = :chatId', { chatId: chat.id })
-            .andWhere('message.senderId != :userId', { userId })
-            .getCount();
-        }
-
-        return {
-          ...chat,
-          lastMessage: lastMessage || undefined,
-          unreadCount,
-        };
+    // FIX N+1: Batch load last messages for ALL chats in ONE query
+    const lastMessagesResult = await this.messageRepository
+      .createQueryBuilder('message')
+      .leftJoinAndSelect('message.sender', 'sender')
+      .where('message.chatId IN (:...chatIds)', { chatIds })
+      .andWhere((qb) => {
+        const subQuery = qb
+          .subQuery()
+          .select('MAX(m2.createdAt)')
+          .from(Message, 'm2')
+          .where('m2.chatId = message.chatId')
+          .getQuery();
+        return `message.createdAt = ${subQuery}`;
       })
-    );
+      .getMany();
+
+    // Map last messages by chatId for O(1) lookup
+    const lastMessagesMap = new Map<string, Message>();
+    for (const msg of lastMessagesResult) {
+      lastMessagesMap.set(msg.chatId, msg);
+    }
+
+    // FIX N+1: Batch load last read messages for ALL chats in ONE query
+    const lastReadMessageIds = chatMembers
+      .filter((cm) => cm.lastReadMessageId)
+      .map((cm) => cm.lastReadMessageId!);
+
+    const lastReadMessagesMap = new Map<string, Date>();
+    if (lastReadMessageIds.length > 0) {
+      const lastReadMessages = await this.messageRepository.find({
+        where: { id: In(lastReadMessageIds) },
+        select: ['id', 'createdAt'],
+      });
+
+      for (const msg of lastReadMessages) {
+        lastReadMessagesMap.set(msg.id, msg.createdAt);
+      }
+    }
+
+    // FIX N+1: Batch calculate unread counts using a single raw query with CASE
+    const unreadCountsMap = await this.getUnreadCountsForChats(chatIds, userId, chatMembers, lastReadMessagesMap);
+
+    // Build final result with all details
+    const chatsWithDetails: ChatWithDetails[] = chats.map((chat) => {
+      const lastMessage = lastMessagesMap.get(chat.id);
+      const unreadCount = unreadCountsMap.get(chat.id) || 0;
+
+      return {
+        ...chat,
+        lastMessage: lastMessage || undefined,
+        unreadCount,
+      };
+    });
 
     return chatsWithDetails;
+  }
+
+  /**
+   * FIX N+1: Batch calculate unread counts for multiple chats
+   * This method executes 1-2 queries instead of N queries
+   */
+  private async getUnreadCountsForChats(
+    chatIds: string[],
+    userId: string,
+    chatMembers: ChatMember[],
+    lastReadMessagesMap: Map<string, Date>
+  ): Promise<Map<string, number>> {
+    const unreadCountsMap = new Map<string, number>();
+
+    // Separate chats into two groups: with and without lastReadMessageId
+    const chatsWithLastRead: Array<{ chatId: string; lastReadDate: Date }> = [];
+    const chatsWithoutLastRead: string[] = [];
+
+    for (const chatId of chatIds) {
+      const member = chatMembers.find((cm) => cm.chatId === chatId);
+
+      if (member?.lastReadMessageId) {
+        const lastReadDate = lastReadMessagesMap.get(member.lastReadMessageId);
+        if (lastReadDate) {
+          chatsWithLastRead.push({ chatId, lastReadDate });
+        }
+      } else {
+        chatsWithoutLastRead.push(chatId);
+      }
+    }
+
+    // Query 1: Count all unread messages for chats WITHOUT lastReadMessageId
+    if (chatsWithoutLastRead.length > 0) {
+      const countsWithoutLastRead = await this.messageRepository
+        .createQueryBuilder('message')
+        .select('message.chatId', 'chatId')
+        .addSelect('COUNT(*)', 'count')
+        .where('message.chatId IN (:...chatIds)', { chatIds: chatsWithoutLastRead })
+        .andWhere('message.senderId != :userId', { userId })
+        .groupBy('message.chatId')
+        .getRawMany<{ chatId: string; count: string }>();
+
+      for (const result of countsWithoutLastRead) {
+        unreadCountsMap.set(result.chatId, parseInt(result.count, 10));
+      }
+    }
+
+    // Query 2: Count unread messages AFTER lastReadDate for chats WITH lastReadMessageId
+    // We use a single query with multiple OR conditions
+    if (chatsWithLastRead.length > 0) {
+      let queryBuilder = this.messageRepository
+        .createQueryBuilder('message')
+        .select('message.chatId', 'chatId')
+        .addSelect('COUNT(*)', 'count')
+        .where('message.senderId != :userId', { userId });
+
+      // Build OR conditions for each chat+date pair
+      const conditions = chatsWithLastRead.map(
+        (_item, index) =>
+          `(message.chatId = :chatId${index} AND message.createdAt > :lastReadDate${index})`
+      );
+
+      queryBuilder = queryBuilder.andWhere(`(${conditions.join(' OR ')})`);
+
+      // Add parameters for each chat+date pair
+      const parameters: Record<string, any> = {};
+      chatsWithLastRead.forEach((item, index) => {
+        parameters[`chatId${index}`] = item.chatId;
+        parameters[`lastReadDate${index}`] = item.lastReadDate;
+      });
+
+      queryBuilder = queryBuilder.setParameters(parameters).groupBy('message.chatId');
+
+      const countsWithLastRead = await queryBuilder.getRawMany<{ chatId: string; count: string }>();
+
+      for (const result of countsWithLastRead) {
+        unreadCountsMap.set(result.chatId, parseInt(result.count, 10));
+      }
+    }
+
+    return unreadCountsMap;
   }
 
   /**

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { messagesService } from '../services/messages.service';
+import { formatErrorResponse } from '../utils/error-handler';
 
 export class MessagesController {
   /**
@@ -29,8 +30,8 @@ export class MessagesController {
       res.json(messages);
     } catch (error) {
       console.error('Error getting messages:', error);
-      const message = error instanceof Error ? error.message : 'Ошибка при получении сообщений';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(error, 'Ошибка при получении сообщений');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -63,8 +64,8 @@ export class MessagesController {
       res.status(201).json(message);
     } catch (error) {
       console.error('Error creating message:', error);
-      const message = error instanceof Error ? error.message : 'Ошибка при отправке сообщения';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(error, 'Ошибка при отправке сообщения');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -91,8 +92,8 @@ export class MessagesController {
       res.json(message);
     } catch (error) {
       console.error('Error getting message:', error);
-      const message = error instanceof Error ? error.message : 'Ошибка при получении сообщения';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(error, 'Ошибка при получении сообщения');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -122,8 +123,8 @@ export class MessagesController {
       res.json(message);
     } catch (error) {
       console.error('Error updating message:', error);
-      const message = error instanceof Error ? error.message : 'Ошибка при редактировании сообщения';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(error, 'Ошибка при редактировании сообщения');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -145,8 +146,8 @@ export class MessagesController {
       res.json({ message: 'Сообщение удалено' });
     } catch (error) {
       console.error('Error deleting message:', error);
-      const message = error instanceof Error ? error.message : 'Ошибка при удалении сообщения';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(error, 'Ошибка при удалении сообщения');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -168,8 +169,8 @@ export class MessagesController {
       res.json({ message: 'Сообщение отмечено как прочитанное' });
     } catch (error) {
       console.error('Error marking message as read:', error);
-      const message = error instanceof Error ? error.message : 'Ошибка при отметке сообщения';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(error, 'Ошибка при отметке сообщения');
+      res.status(statusCode).json(response);
     }
   }
 }

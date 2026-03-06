@@ -29,7 +29,8 @@ export const AppDataSource = new DataSource({
     client_encoding: 'UTF8',
   },
 
-  synchronize: true, // Auto-sync schema in dev
+  // CRITICAL: Only auto-sync in development! In production, use migrations
+  synchronize: process.env.NODE_ENV === 'development',
   logging: process.env.NODE_ENV === 'development',
   entities: [
     User,

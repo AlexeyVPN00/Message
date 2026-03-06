@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { chatsService } from '../services/chats.service';
+import { formatErrorResponse } from '../utils/error-handler';
 
 export class ChatsController {
   /**
@@ -79,8 +80,8 @@ export class ChatsController {
       res.json(chat);
     } catch (error) {
       console.error('Error getting chat:', error);
-      const message = error instanceof Error ? error.message : 'Ошибка при получении чата';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(error, 'Ошибка при получении чата');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -144,8 +145,8 @@ export class ChatsController {
       res.json(chat);
     } catch (error) {
       console.error('Error updating group chat:', error);
-      const message = error instanceof Error ? error.message : 'Ошибка при обновлении группы';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(error, 'Ошибка при обновлении группы');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -167,8 +168,8 @@ export class ChatsController {
       res.json(members);
     } catch (error) {
       console.error('Error getting chat members:', error);
-      const message = error instanceof Error ? error.message : 'Ошибка при получении участников';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(error, 'Ошибка при получении участников');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -199,8 +200,8 @@ export class ChatsController {
       res.status(201).json(member);
     } catch (error) {
       console.error('Error adding member:', error);
-      const message = error instanceof Error ? error.message : 'Ошибка при добавлении участника';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(error, 'Ошибка при добавлении участника');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -223,8 +224,8 @@ export class ChatsController {
       res.json({ message: 'Участник удален' });
     } catch (error) {
       console.error('Error removing member:', error);
-      const message = error instanceof Error ? error.message : 'Ошибка при удалении участника';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(error, 'Ошибка при удалении участника');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -255,8 +256,8 @@ export class ChatsController {
       res.json(member);
     } catch (error) {
       console.error('Error updating member role:', error);
-      const message = error instanceof Error ? error.message : 'Ошибка при изменении роли';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(error, 'Ошибка при изменении роли');
+      res.status(statusCode).json(response);
     }
   }
 }

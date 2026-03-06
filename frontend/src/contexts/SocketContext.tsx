@@ -33,11 +33,19 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     if (!isAuthenticated || !accessToken) {
       // Если пользователь не авторизован, отключаем сокет
       if (socket) {
+        socket.removeAllListeners(); // Удаляем все listeners
         socket.disconnect();
         setSocket(null);
         setIsConnected(false);
       }
       return;
+    }
+
+    // ИСПРАВЛЕНИЕ УТЕЧКИ ПАМЯТИ: Отключаем старый socket перед созданием нового
+    if (socket) {
+      console.log('🔄 Disconnecting old socket before creating new one');
+      socket.removeAllListeners(); // Удаляем все старые listeners
+      socket.disconnect();
     }
 
     // Создаем подключение к Socket.io
@@ -75,8 +83,10 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     setSocket(newSocket);
 
-    // Cleanup при размонтировании
+    // ИСПРАВЛЕНИЕ УТЕЧКИ ПАМЯТИ: Cleanup при размонтировании
     return () => {
+      console.log('🧹 Cleaning up socket');
+      newSocket.removeAllListeners(); // Удаляем все listeners перед disconnect
       newSocket.disconnect();
     };
   }, [isAuthenticated, accessToken]);

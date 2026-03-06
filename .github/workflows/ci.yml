@@ -29,12 +29,22 @@ jobs:
       - name: Run ESLint
         working-directory: ./backend
         run: npx eslint . --ext .ts --max-warnings 0
-        continue-on-error: true
 
       - name: Run Prettier check
         working-directory: ./backend
         run: npx prettier --check "src/**/*.ts"
-        continue-on-error: true
+
+      - name: Run tests
+        working-directory: ./backend
+        run: npm run test:ci
+
+      - name: Upload backend coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./backend/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
 
       - name: Build TypeScript
         working-directory: ./backend
@@ -73,7 +83,18 @@ jobs:
       - name: Run Prettier check
         working-directory: ./frontend
         run: npx prettier --check "src/**/*.{ts,tsx}"
-        continue-on-error: true
+
+      - name: Run tests
+        working-directory: ./frontend
+        run: npm run test:ci
+
+      - name: Upload frontend coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
 
       - name: Build frontend
         working-directory: ./frontend

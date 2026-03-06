@@ -3,6 +3,7 @@ import { Post } from '../models/Post.entity';
 import { PostLike } from '../models/PostLike.entity';
 import { Comment } from '../models/Comment.entity';
 import { User } from '../models/User.entity';
+import { sanitizeHtml } from '../utils/sanitize';
 
 export interface CreatePostDto {
   content: string;
@@ -101,7 +102,7 @@ export class PostsService {
   async createPost(authorId: string, data: CreatePostDto): Promise<Post> {
     const post = this.postRepository.create({
       authorId,
-      content: data.content,
+      content: sanitizeHtml(data.content), // XSS protection
     });
 
     await this.postRepository.save(post);
@@ -125,7 +126,7 @@ export class PostsService {
       throw new Error('Только автор может редактировать пост');
     }
 
-    post.content = data.content;
+    post.content = sanitizeHtml(data.content); // XSS protection
     await this.postRepository.save(post);
 
     return await this.getPostById(postId, userId) as Post;
@@ -151,55 +152,88 @@ export class PostsService {
   }
 
   /**
-   * Лайкнуть пост
+   * Лайкнуть пост (с защитой от race conditions)
    */
   async likePost(postId: string, userId: string): Promise<PostLike> {
-    const post = await this.postRepository.findOne({
-      where: { id: postId },
+    // Используем транзакцию для атомарности операций
+    return await AppDataSource.transaction(async (transactionalEntityManager) => {
+      // Проверяем существование поста
+      const post = await transactionalEntityManager.findOne(Post, {
+        where: { id: postId },
+      });
+
+      if (!post) {
+        throw new Error('Пост не найден');
+      }
+
+      // Проверяем, не лайкнут ли уже (внутри транзакции для консистентности)
+      const existing = await transactionalEntityManager.findOne(PostLike, {
+        where: { postId, userId },
+      });
+
+      if (existing) {
+        return existing;
+      }
+
+      try {
+        // Создаем лайк
+        const like = transactionalEntityManager.create(PostLike, {
+          postId,
+          userId,
+        });
+
+        await transactionalEntityManager.save(like);
+
+        // Атомарно увеличиваем счетчик
+        await transactionalEntityManager.increment(
+          Post,
+          { id: postId },
+          'likesCount',
+          1
+        );
+
+        return like;
+      } catch (error: any) {
+        // ИСПРАВЛЕНИЕ RACE CONDITION: Если возникла ошибка unique constraint
+        // (два одновременных запроса), возвращаем существующий лайк
+        if (error.code === '23505' || error.message?.includes('duplicate key')) {
+          const existingLike = await transactionalEntityManager.findOne(PostLike, {
+            where: { postId, userId },
+          });
+
+          if (existingLike) {
+            return existingLike;
+          }
+        }
+
+        throw error;
+      }
     });
-
-    if (!post) {
-      throw new Error('Пост не найден');
-    }
-
-    // Проверяем, не лайкнут ли уже
-    const existing = await this.likeRepository.findOne({
-      where: { postId, userId },
-    });
-
-    if (existing) {
-      return existing;
-    }
-
-    const like = this.likeRepository.create({
-      postId,
-      userId,
-    });
-
-    await this.likeRepository.save(like);
-
-    // Обновляем счетчик лайков
-    await this.postRepository.increment({ id: postId }, 'likesCount', 1);
-
-    return like;
   }
 
   /**
-   * Убрать лайк с поста
+   * Убрать лайк с поста (с защитой от race conditions)
    */
   async unlikePost(postId: string, userId: string): Promise<void> {
-    const like = await this.likeRepository.findOne({
-      where: { postId, userId },
+    // Используем транзакцию для атомарности операций
+    await AppDataSource.transaction(async (transactionalEntityManager) => {
+      const like = await transactionalEntityManager.findOne(PostLike, {
+        where: { postId, userId },
+      });
+
+      if (!like) {
+        throw new Error('Лайк не найден');
+      }
+
+      await transactionalEntityManager.remove(like);
+
+      // ИСПРАВЛЕНИЕ RACE CONDITION: Безопасный декремент (не опускается ниже 0)
+      // Используем raw query для GREATEST функции PostgreSQL
+      await transactionalEntityManager.query(
+        `UPDATE posts SET likes_count = GREATEST(likes_count - 1, 0) WHERE id = $1`,
+        [postId]
+      );
     });
-
-    if (!like) {
-      throw new Error('Лайк не найден');
-    }
-
-    await this.likeRepository.remove(like);
-
-    // Обновляем счетчик лайков
-    await this.postRepository.decrement({ id: postId }, 'likesCount', 1);
   }
 
   /**
@@ -250,7 +284,7 @@ export class PostsService {
     const comment = this.commentRepository.create({
       postId,
       authorId,
-      content: data.content,
+      content: sanitizeHtml(data.content), // XSS protection
       replyToCommentId: data.replyToCommentId,
     });
 

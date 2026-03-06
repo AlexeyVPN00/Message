@@ -2,6 +2,11 @@ import { Router } from 'express';
 import { chatsController } from '../controllers/chats.controller';
 import { messagesController } from '../controllers/messages.controller';
 import { authenticate } from '../middlewares/auth.middleware';
+import { validate } from '../middlewares/validate.middleware';
+import {
+  createMessageSchema,
+  getMessagesSchema,
+} from '../validators/messages.validator';
 
 const router = Router();
 
@@ -22,7 +27,7 @@ router.delete('/:id/members/:userId', chatsController.removeMember.bind(chatsCon
 router.patch('/:id/members/:userId', chatsController.updateMemberRole.bind(chatsController));
 
 // Сообщения чата
-router.get('/:chatId/messages', messagesController.getMessages.bind(messagesController));
-router.post('/:chatId/messages', messagesController.createMessage.bind(messagesController));
+router.get('/:chatId/messages', validate(getMessagesSchema), messagesController.getMessages.bind(messagesController));
+router.post('/:chatId/messages', validate(createMessageSchema), messagesController.createMessage.bind(messagesController));
 
 export default router;

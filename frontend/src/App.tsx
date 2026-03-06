@@ -5,6 +5,7 @@ import { AppRoutes } from './routes';
 import { SocketProvider } from './contexts/SocketContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { useAuthStore } from './store/authStore';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 function App() {
   const loadUser = useAuthStore((state) => state.loadUser);
@@ -15,14 +16,16 @@ function App() {
   }, [loadUser]);
 
   return (
-    <BrowserRouter>
-      <ThemeProvider>
-        <Toaster position="top-right" />
-        <SocketProvider>
-          <AppRoutes />
-        </SocketProvider>
-      </ThemeProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ThemeProvider>
+          <Toaster position="top-right" />
+          <SocketProvider>
+            <AppRoutes />
+          </SocketProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

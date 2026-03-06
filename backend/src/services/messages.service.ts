@@ -4,6 +4,7 @@ import { Message } from '../models/Message.entity';
 import { chatsService } from './chats.service';
 import { fileAttachmentsService } from './file-attachments.service';
 import { AttachmentContext } from '../models/FileAttachment.entity';
+import { sanitizeHtml } from '../utils/sanitize';
 
 export interface CreateMessageDto {
   chatId: string;
@@ -85,12 +86,16 @@ export class MessagesService {
 
     const messages = await queryBuilder.getMany();
 
-    // Загружаем attachments для каждого сообщения
+    // FIX N+1: Batch load attachments for all messages in ONE query
+    const messageIds = messages.map((m) => m.id);
+    const attachmentsMap = await fileAttachmentsService.getAttachmentsByContextIds(
+      AttachmentContext.MESSAGE,
+      messageIds
+    );
+
+    // Map attachments to messages
     for (const message of messages) {
-      message.attachments = await fileAttachmentsService.getAttachmentsByContext(
-        AttachmentContext.MESSAGE,
-        message.id
-      );
+      message.attachments = attachmentsMap.get(message.id) || [];
     }
 
     // Возвращаем в хронологическом порядке (от старых к новым)
@@ -114,11 +119,11 @@ export class MessagesService {
       throw new Error('Вы не являетесь участником этого чата');
     }
 
-    // Создаем сообщение
+    // Создаем сообщение (with XSS protection)
     const message = this.messageRepository.create({
       chatId,
       senderId,
-      content: content || '', // Empty string if only attachments
+      content: content ? sanitizeHtml(content) : '', // Sanitize and protect against XSS
       replyToMessageId,
     });
 
@@ -155,7 +160,7 @@ export class MessagesService {
     });
 
     if (savedMessage) {
-      // Загружаем attachments вручную
+      // Загружаем attachments (single message, so getAttachmentsByContext is fine)
       savedMessage.attachments = await fileAttachmentsService.getAttachmentsByContext(
         AttachmentContext.MESSAGE,
         savedMessage.id
@@ -209,7 +214,7 @@ export class MessagesService {
       throw new Error('Вы можете редактировать только свои сообщения');
     }
 
-    message.content = data.content;
+    message.content = sanitizeHtml(data.content); // XSS protection
     message.isEdited = true;
 
     await this.messageRepository.save(message);

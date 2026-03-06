@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { usersService } from '../services/users.service';
+import { formatErrorResponse } from '../utils/error-handler';
 
 export class UsersController {
   /**
@@ -51,7 +52,8 @@ export class UsersController {
 
       // Проверка прав доступа - пользователь может обновлять только свой профиль
       if (userId !== currentUserId) {
-        res.status(403).json({ message: 'Нет прав для редактирования этого профиля' });
+        const { statusCode, response } = formatErrorResponse('Нет прав для редактирования этого профиля', 'Ошибка');
+        res.status(statusCode).json(response);
         return;
       }
 
@@ -82,7 +84,8 @@ export class UsersController {
 
       // Проверка прав доступа
       if (userId !== currentUserId) {
-        res.status(403).json({ message: 'Нет прав для удаления аватара' });
+        const { statusCode, response } = formatErrorResponse('Нет прав для удаления аватара', 'Ошибка');
+        res.status(statusCode).json(response);
         return;
       }
 

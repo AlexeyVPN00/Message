@@ -10,11 +10,13 @@ interface ChatState {
   currentChatId: string | null;
   messages: Record<string, Message[]>; // chatId -> messages
   typingUsers: Record<string, TypingUser[]>; // chatId -> typing users
+  typingTimers: Record<string, ReturnType<typeof setTimeout>>; // key -> timer ID для очистки
   isLoading: boolean;
   socket: Socket | null;
 
   // Actions
   setSocket: (socket: Socket | null) => void;
+  cleanup: () => void;
   loadChats: () => Promise<void>;
   loadMessages: (chatId: string) => Promise<void>;
   markMessagesAsRead: (chatId: string) => Promise<void>;
@@ -49,10 +51,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
   currentChatId: null,
   messages: {},
   typingUsers: {},
+  typingTimers: {},
   isLoading: false,
   socket: null,
 
   setSocket: (socket) => {
+    // ИСПРАВЛЕНИЕ УТЕЧКИ ПАМЯТИ: Удаляем старые listeners перед добавлением новых
+    const currentSocket = get().socket;
+    if (currentSocket) {
+      currentSocket.off('message:new');
+      currentSocket.off('message:updated');
+      currentSocket.off('message:deleted');
+      currentSocket.off('chat:typing');
+      currentSocket.off('chat:stop_typing');
+    }
+
     set({ socket });
 
     if (!socket) return;
@@ -81,6 +94,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     socket.on('chat:stop_typing', ({ chatId, userId }: { chatId: string; userId: string }) => {
       get().handleStopTyping(chatId, userId);
+    });
+  },
+
+  cleanup: () => {
+    // Очищаем все typing timers
+    const { typingTimers, socket } = get();
+    Object.values(typingTimers).forEach((timer) => clearTimeout(timer));
+
+    // Удаляем все socket listeners
+    if (socket) {
+      socket.off('message:new');
+      socket.off('message:updated');
+      socket.off('message:deleted');
+      socket.off('chat:typing');
+      socket.off('chat:stop_typing');
+      socket.disconnect();
+    }
+
+    // Сбрасываем state
+    set({
+      socket: null,
+      typingTimers: {},
+      typingUsers: {},
     });
   },
 
@@ -304,6 +340,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   handleTyping: (chatId, userId, username) => {
+    const timerKey = `${chatId}:${userId}`;
+
+    // ИСПРАВЛЕНИЕ УТЕЧКИ ПАМЯТИ: Очищаем старый таймер если он есть
+    const existingTimer = get().typingTimers[timerKey];
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+
     set((state) => {
       const typingInChat = state.typingUsers[chatId] || [];
 
@@ -320,10 +364,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
       };
     });
 
-    // Автоматически убираем индикатор через 3 секунды
-    setTimeout(() => {
+    // ИСПРАВЛЕНИЕ УТЕЧКИ ПАМЯТИ: Сохраняем timer ID для возможности очистки
+    const timer = setTimeout(() => {
       get().handleStopTyping(chatId, userId);
+
+      // Удаляем timer из state после выполнения
+      set((state) => {
+        const { [timerKey]: _, ...rest } = state.typingTimers;
+        return { typingTimers: rest };
+      });
     }, 3000);
+
+    // Сохраняем timer в state
+    set((state) => ({
+      typingTimers: {
+        ...state.typingTimers,
+        [timerKey]: timer,
+      },
+    }));
   },
 
   handleStopTyping: (chatId, userId) => {

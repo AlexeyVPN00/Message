@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { postsService } from '../services/posts.service';
+import { formatErrorResponse } from '../utils/error-handler';
 
 export class PostsController {
   /**
@@ -123,7 +124,8 @@ export class PostsController {
     } catch (error) {
       console.error('Error updating post:', error);
       const message = error instanceof Error ? error.message : 'Ошибка при обновлении поста';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(message, 'Ошибка');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -146,7 +148,8 @@ export class PostsController {
     } catch (error) {
       console.error('Error deleting post:', error);
       const message = error instanceof Error ? error.message : 'Ошибка при удалении поста';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(message, 'Ошибка');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -279,7 +282,8 @@ export class PostsController {
     } catch (error) {
       console.error('Error deleting comment:', error);
       const message = error instanceof Error ? error.message : 'Ошибка при удалении комментария';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(message, 'Ошибка');
+      res.status(statusCode).json(response);
     }
   }
 }

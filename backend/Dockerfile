@@ -1,5 +1,5 @@
 # Multi-stage build для оптимизации размера образа
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ COPY . .
 RUN chmod +x node_modules/.bin/* && npm run build
 
 # Production образ
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -39,6 +39,10 @@ USER nodejs
 
 # Открываем порт
 EXPOSE 5000
+
+# Health check для мониторинга состояния контейнера
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Запускаем приложение
 CMD ["node", "dist/server.js"]

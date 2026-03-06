@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { channelsService } from '../services/channels.service';
+import { formatErrorResponse } from '../utils/error-handler';
 
 export class ChannelsController {
   /**
@@ -98,7 +99,8 @@ export class ChannelsController {
     } catch (error) {
       console.error('Error updating channel:', error);
       const message = error instanceof Error ? error.message : 'Ошибка при обновлении канала';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(message, 'Ошибка');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -121,7 +123,8 @@ export class ChannelsController {
     } catch (error) {
       console.error('Error deleting channel:', error);
       const message = error instanceof Error ? error.message : 'Ошибка при удалении канала';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(message, 'Ошибка');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -190,7 +193,8 @@ export class ChannelsController {
     } catch (error) {
       console.error('Error getting subscribers:', error);
       const message = error instanceof Error ? error.message : 'Ошибка при получении подписчиков';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(message, 'Ошибка');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -240,7 +244,8 @@ export class ChannelsController {
     } catch (error) {
       console.error('Error creating post:', error);
       const message = error instanceof Error ? error.message : 'Ошибка при создании поста';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(message, 'Ошибка');
+      res.status(statusCode).json(response);
     }
   }
 
@@ -263,7 +268,8 @@ export class ChannelsController {
     } catch (error) {
       console.error('Error deleting post:', error);
       const message = error instanceof Error ? error.message : 'Ошибка при удалении поста';
-      res.status(403).json({ message });
+      const { statusCode, response } = formatErrorResponse(message, 'Ошибка');
+      res.status(statusCode).json(response);
     }
   }
 

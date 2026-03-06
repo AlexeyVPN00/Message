@@ -14,6 +14,7 @@ import { useSocket } from '../../contexts/SocketContext';
 import { Avatar } from '../../components/common/Avatar';
 import { ChatType, MemberRole } from '../../types/chat.types';
 import { useAuthStore } from '../../store/authStore';
+import { CompactErrorBoundary } from '../../components/common/ErrorBoundary';
 
 export const ChatsPage = () => {
   const { socket } = useSocket();
@@ -108,7 +109,9 @@ export const ChatsPage = () => {
             position: 'relative',
           }}
         >
-          <ChatList onChatSelect={setCurrentChat} selectedChatId={currentChatId} />
+          <CompactErrorBoundary>
+            <ChatList onChatSelect={setCurrentChat} selectedChatId={currentChatId} />
+          </CompactErrorBoundary>
 
           {/* Кнопка создания группы */}
           <Fab
@@ -209,7 +212,9 @@ export const ChatsPage = () => {
               <Divider />
 
               {/* Сообщения */}
-              <MessageList chatId={currentChatId} />
+              <CompactErrorBoundary>
+                <MessageList chatId={currentChatId} />
+              </CompactErrorBoundary>
 
               {/* Поле ввода */}
               <MessageInput chatId={currentChatId} />

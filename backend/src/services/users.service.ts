@@ -1,6 +1,7 @@
 import { Repository } from 'typeorm';
 import { AppDataSource } from '../config/database';
 import { User } from '../models/User.entity';
+import { sanitizeHtml } from '../utils/sanitize';
 
 export interface UpdateUserDto {
   firstName?: string;
@@ -67,10 +68,10 @@ export class UsersService {
       }
     }
 
-    // Обновляем только переданные поля
-    if (data.firstName !== undefined) user.firstName = data.firstName;
-    if (data.lastName !== undefined) user.lastName = data.lastName;
-    if (data.bio !== undefined) user.bio = data.bio;
+    // Обновляем только переданные поля (with XSS protection)
+    if (data.firstName !== undefined) user.firstName = sanitizeHtml(data.firstName);
+    if (data.lastName !== undefined) user.lastName = sanitizeHtml(data.lastName);
+    if (data.bio !== undefined) user.bio = sanitizeHtml(data.bio);
     if (data.phone !== undefined) user.phone = data.phone;
 
     await this.userRepository.save(user);
