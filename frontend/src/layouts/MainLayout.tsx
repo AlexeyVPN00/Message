@@ -1,7 +1,7 @@
-import { ReactNode } from 'react';
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Badge, Typography, Divider, IconButton, useTheme as useMuiTheme, useMediaQuery } from '@mui/material';
+import { ReactNode, useState } from 'react';
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Badge, Typography, Divider, IconButton, useTheme as useMuiTheme, useMediaQuery, BottomNavigation, BottomNavigationAction, Paper, AppBar, Toolbar, Menu, MenuItem } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { AccountCircle, Chat, RssFeed, Notifications, Brightness4, Brightness7, Logout, Contacts } from '@mui/icons-material';
+import { AccountCircle, Chat, RssFeed, Notifications, Brightness4, Brightness7, Logout, Contacts, Menu as MenuIcon, MoreVert } from '@mui/icons-material';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNotificationsStore } from '../store/notificationsStore';
 import { useAuthStore } from '../store/authStore';
@@ -21,6 +21,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   const { user, logout } = useAuthStore();
   const muiTheme = useMuiTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
+  const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null);
 
   const menuItems = [
     {
@@ -239,9 +240,91 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
     </Box>
   );
 
+  const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMobileMenuAnchor(event.currentTarget);
+  };
+
+  const handleMobileMenuClose = () => {
+    setMobileMenuAnchor(null);
+  };
+
+  const handleMobileLogout = () => {
+    handleMobileMenuClose();
+    handleLogout();
+  };
+
+  const handleMobileThemeToggle = () => {
+    handleMobileMenuClose();
+    toggleTheme();
+  };
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Боковая панель */}
+      {/* Mobile Top App Bar */}
+      {isMobile && (
+        <AppBar
+          position="fixed"
+          sx={{
+            background: (theme) =>
+              theme.palette.mode === 'light'
+                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                : 'linear-gradient(135deg, #1a1a2e 0%, #2d3561 100%)',
+            boxShadow: (theme) =>
+              theme.palette.mode === 'light'
+                ? '0 2px 12px rgba(102, 126, 234, 0.15)'
+                : '0 2px 12px rgba(0, 0, 0, 0.3)',
+          }}
+        >
+          <Toolbar>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1 }} onClick={() => navigate('/profile')}>
+              <Avatar
+                src={user?.avatarUrl || undefined}
+                alt={user?.username || 'User'}
+                size={40}
+              />
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 600,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    color: '#fff',
+                  }}
+                >
+                  {user?.firstName && user?.lastName
+                    ? `${user.firstName} ${user.lastName}`
+                    : user?.username || 'Пользователь'}
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton color="inherit" onClick={handleMobileMenuOpen}>
+              <MoreVert />
+            </IconButton>
+            <Menu
+              anchorEl={mobileMenuAnchor}
+              open={Boolean(mobileMenuAnchor)}
+              onClose={handleMobileMenuClose}
+            >
+              <MenuItem onClick={handleMobileThemeToggle}>
+                <ListItemIcon>
+                  {themeMode === 'light' ? <Brightness4 /> : <Brightness7 />}
+                </ListItemIcon>
+                <ListItemText>{themeMode === 'light' ? 'Тёмная тема' : 'Светлая тема'}</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={handleMobileLogout}>
+                <ListItemIcon>
+                  <Logout />
+                </ListItemIcon>
+                <ListItemText>Выйти</ListItemText>
+              </MenuItem>
+            </Menu>
+          </Toolbar>
+        </AppBar>
+      )}
+
+      {/* Боковая панель (только desktop) */}
       <Drawer
         variant="permanent"
         sx={{
@@ -273,10 +356,86 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
               ? 'linear-gradient(180deg, #f8f9ff 0%, #ffffff 100%)'
               : 'linear-gradient(180deg, #0f0f23 0%, #1a1a2e 100%)',
           overflow: 'auto',
+          mt: isMobile ? '64px' : 0, // Отступ для AppBar
+          mb: isMobile ? '56px' : 0, // Отступ для BottomNavigation
         }}
       >
         {children}
       </Box>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <Paper
+          sx={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000,
+            borderTop: (theme) =>
+              theme.palette.mode === 'light'
+                ? '1px solid rgba(102, 126, 234, 0.1)'
+                : '1px solid rgba(102, 126, 234, 0.2)',
+            boxShadow: (theme) =>
+              theme.palette.mode === 'light'
+                ? '0 -2px 12px rgba(102, 126, 234, 0.08)'
+                : '0 -2px 12px rgba(0, 0, 0, 0.3)',
+          }}
+          elevation={3}
+        >
+          <BottomNavigation
+            value={location.pathname}
+            onChange={(event, newValue) => {
+              navigate(newValue);
+            }}
+            showLabels
+            sx={{
+              background: 'transparent',
+              '& .MuiBottomNavigationAction-root': {
+                minWidth: '60px',
+                color: 'text.secondary',
+                '&.Mui-selected': {
+                  color: 'primary.main',
+                },
+              },
+            }}
+          >
+            <BottomNavigationAction
+              label="Профиль"
+              value="/profile"
+              icon={<AccountCircle />}
+            />
+            <BottomNavigationAction
+              label="Диалоги"
+              value="/chats"
+              icon={
+                <Badge badgeContent={0} color="error">
+                  <Chat />
+                </Badge>
+              }
+            />
+            <BottomNavigationAction
+              label="Контакты"
+              value="/contacts"
+              icon={<Contacts />}
+            />
+            <BottomNavigationAction
+              label="Новости"
+              value="/feed"
+              icon={<RssFeed />}
+            />
+            <BottomNavigationAction
+              label="Уведомления"
+              value="/notifications"
+              icon={
+                <Badge badgeContent={unreadCount} color="error" max={99}>
+                  <Notifications />
+                </Badge>
+              }
+            />
+          </BottomNavigation>
+        </Paper>
+      )}
     </Box>
   );
 };
