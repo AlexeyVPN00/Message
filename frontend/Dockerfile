@@ -13,7 +13,7 @@ RUN npm install
 COPY . .
 
 # Билдим приложение
-RUN npx vite build
+RUN chmod +x node_modules/.bin/* && npm run build
 
 # Production образ с nginx
 FROM nginx:alpine
