@@ -41,7 +41,8 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     }
 
     // Создаем подключение к Socket.io
-    const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:5000';
+    // Пустая строка означает использование текущего домена (relative path)
+    const WS_URL = import.meta.env.VITE_WS_URL || '';
 
     const newSocket = io(WS_URL, {
       auth: {

@@ -12,6 +12,10 @@ RUN npm install
 # Копируем исходный код
 COPY . .
 
+# Устанавливаем переменные окружения для production build
+ENV VITE_API_URL=/api
+ENV VITE_WS_URL=
+
 # Билдим приложение
 RUN chmod +x node_modules/.bin/* && npm run build
 

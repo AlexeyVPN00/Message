@@ -10,9 +10,15 @@ export interface AuthenticatedSocket extends Socket {
 let io: SocketIOServer | null = null;
 
 export const initializeSocket = (httpServer: HTTPServer): SocketIOServer => {
+  const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'http://eramessage.ru',
+    'https://eramessage.ru',
+  ];
+
   io = new SocketIOServer(httpServer, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: allowedOrigins,
       credentials: true,
     },
     pingTimeout: 60000,
