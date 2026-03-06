@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { uploadService } from '../services/upload.service';
 import { usersService } from '../services/users.service';
 import { chatsService } from '../services/chats.service';
+import { normalizeFilename } from '../utils/filename.utils';
 
 export class UploadController {
   /**
@@ -68,7 +69,7 @@ export class UploadController {
       res.json({
         message: 'Файл успешно загружен',
         fileUrl,
-        fileName: req.file.originalname,
+        fileName: normalizeFilename(req.file.originalname),
         fileSize: req.file.size,
         mimeType: req.file.mimetype,
       });
@@ -131,7 +132,7 @@ export class UploadController {
 
       const uploadedFiles = req.files.map((file) => ({
         fileUrl: uploadService.getFileUrl(file.path),
-        fileName: file.originalname,
+        fileName: normalizeFilename(file.originalname),
         fileSize: file.size,
         mimeType: file.mimetype,
       }));

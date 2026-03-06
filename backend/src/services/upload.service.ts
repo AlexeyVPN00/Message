@@ -75,9 +75,21 @@ export class UploadService {
    * Получить URL файла
    */
   getFileUrl(filePath: string): string {
-    // В разработке возвращаем относительный путь
+    // Normalize path separators
     const relativePath = filePath.replace(/\\/g, '/').split('/uploads/')[1];
-    return `/uploads/${relativePath}`;
+
+    // Split into directory and filename
+    const parts = relativePath.split('/');
+    const filename = parts.pop() || '';
+    const directory = parts.join('/');
+
+    // Encode filename for URL safety (handles Cyrillic)
+    const encodedFilename = encodeURIComponent(filename);
+
+    // Reconstruct path
+    return directory
+      ? `/uploads/${directory}/${encodedFilename}`
+      : `/uploads/${encodedFilename}`;
   }
 
   /**

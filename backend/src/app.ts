@@ -68,7 +68,14 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Static files (uploads)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+  setHeaders: (res, filePath) => {
+    // Set UTF-8 filename in Content-Disposition header
+    const filename = path.basename(filePath);
+    const encodedFilename = encodeURIComponent(filename);
+    res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodedFilename}`);
+  }
+}));
 
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
