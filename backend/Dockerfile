@@ -13,7 +13,7 @@ RUN npm install
 COPY . .
 
 # Компилируем TypeScript
-RUN npm run build
+RUN chmod +x node_modules/.bin/* && npm run build
 
 # Production образ
 FROM node:18-alpine
