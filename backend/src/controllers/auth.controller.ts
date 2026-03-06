@@ -18,10 +18,10 @@ export class AuthController {
       const result = await authService.register(data);
 
       // Set refresh token as HttpOnly cookie
-      res.cookie('refreshToken', result.accessToken, {
+      res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
 
@@ -49,10 +49,10 @@ export class AuthController {
       const result = await authService.login(data);
 
       // Set refresh token as HttpOnly cookie
-      res.cookie('refreshToken', result.accessToken, {
+      res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 

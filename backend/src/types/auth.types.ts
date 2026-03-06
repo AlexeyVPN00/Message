@@ -22,6 +22,7 @@ export interface AuthResponse {
     avatarUrl: string | null;
   };
   accessToken: string;
+  refreshToken: string;
 }
 
 export interface RefreshResponse {

@@ -81,6 +81,7 @@ export class AuthService {
         avatarUrl: user.avatarUrl,
       },
       accessToken,
+      refreshToken,
     };
   }
 
@@ -134,6 +135,7 @@ export class AuthService {
         avatarUrl: user.avatarUrl,
       },
       accessToken,
+      refreshToken,
     };
   }
 
