@@ -5,7 +5,6 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  OneToMany,
   Index,
   JoinColumn,
 } from 'typeorm';
@@ -58,8 +57,8 @@ export class Message {
   @JoinColumn({ name: 'reply_to_message_id' })
   replyToMessage: Message | null;
 
-  @OneToMany(() => FileAttachment, (attachment) => attachment.contextId, {
-    eager: false,
-  })
+  // Note: attachments are loaded separately via fileAttachmentsService
+  // because FileAttachment uses polymorphic association (context + contextId)
+  // which TypeORM cannot handle with OneToMany
   attachments?: FileAttachment[];
 }

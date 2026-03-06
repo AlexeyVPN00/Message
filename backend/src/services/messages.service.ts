@@ -56,7 +56,6 @@ export class MessagesService {
       .leftJoinAndSelect('message.sender', 'sender')
       .leftJoinAndSelect('message.replyToMessage', 'replyToMessage')
       .leftJoinAndSelect('replyToMessage.sender', 'replyToMessageSender')
-      .leftJoinAndSelect('message.attachments', 'attachments')
       .orderBy('message.createdAt', 'DESC')
       .take(limit);
 
@@ -85,6 +84,14 @@ export class MessagesService {
     }
 
     const messages = await queryBuilder.getMany();
+
+    // Загружаем attachments для каждого сообщения
+    for (const message of messages) {
+      message.attachments = await fileAttachmentsService.getAttachmentsByContext(
+        AttachmentContext.MESSAGE,
+        message.id
+      );
+    }
 
     // Возвращаем в хронологическом порядке (от старых к новым)
     return messages.reverse();
@@ -141,11 +148,19 @@ export class MessagesService {
       .where('id = :chatId', { chatId })
       .execute();
 
-    // Загружаем сообщение с отношениями (включая attachments)
+    // Загружаем сообщение с отношениями
     const savedMessage = await this.messageRepository.findOne({
       where: { id: message.id },
-      relations: ['sender', 'replyToMessage', 'replyToMessage.sender', 'attachments'],
+      relations: ['sender', 'replyToMessage', 'replyToMessage.sender'],
     });
+
+    if (savedMessage) {
+      // Загружаем attachments вручную
+      savedMessage.attachments = await fileAttachmentsService.getAttachmentsByContext(
+        AttachmentContext.MESSAGE,
+        savedMessage.id
+      );
+    }
 
     return savedMessage!;
   }
