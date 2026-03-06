@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { Box, IconButton, Paper, Typography } from '@mui/material';
 import { Download, InsertDriveFile } from '@mui/icons-material';
 import { FileAttachment, AttachmentType } from '../../types/chat.types';
 import { uploadApi } from '../../api/upload.api';
+import { ImageViewer } from './ImageViewer';
 
 interface MessageAttachmentProps {
   attachment: FileAttachment;
 }
 
 export const MessageAttachment = ({ attachment }: MessageAttachmentProps) => {
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const fileUrl = uploadApi.getFileUrl(attachment.fileUrl);
 
   const formatFileSize = (bytes: number): string => {
@@ -25,39 +28,48 @@ export const MessageAttachment = ({ attachment }: MessageAttachmentProps) => {
 
   if (attachment.fileType === AttachmentType.IMAGE) {
     return (
-      <Box
-        sx={{
-          maxWidth: 300,
-          borderRadius: 2,
-          overflow: 'hidden',
-          cursor: 'pointer',
-          position: 'relative',
-          '&:hover .download-btn': { opacity: 1 },
-        }}
-        onClick={() => window.open(fileUrl, '_blank')}
-      >
-        <img src={fileUrl} alt={attachment.fileName} style={{ width: '100%', display: 'block' }} />
-        <IconButton
-          className="download-btn"
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDownload();
-          }}
+      <>
+        <Box
           sx={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            bgcolor: 'rgba(0,0,0,0.5)',
-            color: 'white',
-            opacity: 0,
-            transition: 'opacity 0.2s',
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' },
+            maxWidth: 300,
+            borderRadius: 2,
+            overflow: 'hidden',
+            cursor: 'pointer',
+            position: 'relative',
+            '&:hover .download-btn': { opacity: 1 },
           }}
+          onClick={() => setImageViewerOpen(true)}
         >
-          <Download fontSize="small" />
-        </IconButton>
-      </Box>
+          <img src={fileUrl} alt={attachment.fileName} style={{ width: '100%', display: 'block' }} />
+          <IconButton
+            className="download-btn"
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownload();
+            }}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              bgcolor: 'rgba(0,0,0,0.5)',
+              color: 'white',
+              opacity: 0,
+              transition: 'opacity 0.2s',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' },
+            }}
+          >
+            <Download fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <ImageViewer
+          imageUrl={fileUrl}
+          fileName={attachment.fileName}
+          open={imageViewerOpen}
+          onClose={() => setImageViewerOpen(false)}
+        />
+      </>
     );
   }
 
