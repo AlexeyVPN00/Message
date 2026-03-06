@@ -243,7 +243,6 @@ export const EditProfile = () => {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               style={{ display: 'none' }}
               onChange={handleAvatarChange}
             />
