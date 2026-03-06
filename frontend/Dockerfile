@@ -13,7 +13,7 @@ RUN npm install
 COPY . .
 
 # Билдим приложение
-RUN npm run build
+RUN npx vite build
 
 # Production образ с nginx
 FROM nginx:alpine
