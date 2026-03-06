@@ -80,6 +80,40 @@ export class UploadController {
   }
 
   /**
+   * POST /api/upload/messages - Загрузить файлы для сообщения (множественные)
+   */
+  async uploadMessageFiles(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+        res.status(400).json({ message: 'Файлы не были загружены' });
+        return;
+      }
+
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(401).json({ message: 'Не авторизован' });
+        return;
+      }
+
+      const uploadedFiles = req.files.map((file) => ({
+        fileUrl: uploadService.getFileUrl(file.path),
+        fileName: file.originalname,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+      }));
+
+      res.json({
+        message: 'Файлы успешно загружены',
+        files: uploadedFiles,
+      });
+    } catch (error) {
+      console.error('Error uploading message files:', error);
+      const message = error instanceof Error ? error.message : 'Ошибка при загрузке файлов';
+      res.status(500).json({ message });
+    }
+  }
+
+  /**
    * POST /api/upload/post - Загрузить файлы для поста
    */
   async uploadPostFiles(req: Request, res: Response): Promise<void> {

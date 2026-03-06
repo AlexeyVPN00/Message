@@ -51,9 +51,19 @@ export const registerChatHandlers = (io: SocketIOServer) => {
      */
     socket.on(
       'message:send',
-      async (data: { chatId: string; content: string; replyToMessageId?: string }) => {
+      async (data: {
+        chatId: string;
+        content?: string;
+        replyToMessageId?: string;
+        attachments?: Array<{
+          fileName: string;
+          fileUrl: string;
+          fileSize: number;
+          mimeType: string;
+        }>;
+      }) => {
         try {
-          const { chatId, content, replyToMessageId } = data;
+          const { chatId, content, replyToMessageId, attachments } = data;
 
           // Создаем сообщение через сервис
           const message = await messagesService.createMessage({
@@ -61,6 +71,7 @@ export const registerChatHandlers = (io: SocketIOServer) => {
             senderId: userId,
             content,
             replyToMessageId,
+            attachments,
           });
 
           // Отправляем сообщение всем участникам чата

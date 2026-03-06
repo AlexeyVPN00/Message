@@ -15,6 +15,16 @@ interface UploadFileResponse {
   mimeType: string;
 }
 
+interface UploadMultipleFilesResponse {
+  message: string;
+  files: Array<{
+    fileUrl: string;
+    fileName: string;
+    fileSize: number;
+    mimeType: string;
+  }>;
+}
+
 export const uploadApi = {
   /**
    * Загрузить аватар
@@ -45,6 +55,29 @@ export const uploadApi = {
         'Content-Type': 'multipart/form-data',
       },
     });
+
+    return response.data;
+  },
+
+  /**
+   * Загрузить множественные файлы для сообщения
+   */
+  uploadMessageFiles: async (files: File[]): Promise<UploadMultipleFilesResponse> => {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+    formData.append('uploadType', 'message');
+
+    const response = await apiClient.post<UploadMultipleFilesResponse>(
+      '/upload/messages',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
 
     return response.data;
   },

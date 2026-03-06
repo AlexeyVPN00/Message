@@ -72,8 +72,11 @@ export const upload = multer({
 // Middleware для загрузки аватара
 export const uploadAvatar = upload.single('avatar');
 
-// Middleware для загрузки файлов к сообщениям
+// Middleware для загрузки файлов к сообщениям (одиночный файл)
 export const uploadMessageFile = upload.single('file');
+
+// Middleware для загрузки файлов к сообщениям (множественные файлы)
+export const uploadMessageFiles = upload.array('files', 5); // До 5 файлов
 
 // Middleware для загрузки файлов к постам
 export const uploadPostFile = upload.array('files', 5); // До 5 файлов

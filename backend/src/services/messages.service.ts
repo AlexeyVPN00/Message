@@ -2,12 +2,20 @@ import { Repository, LessThan, MoreThan } from 'typeorm';
 import { AppDataSource } from '../config/database';
 import { Message } from '../models/Message.entity';
 import { chatsService } from './chats.service';
+import { fileAttachmentsService } from './file-attachments.service';
+import { AttachmentContext } from '../models/FileAttachment.entity';
 
 export interface CreateMessageDto {
   chatId: string;
   senderId: string;
-  content: string;
+  content?: string; // Make optional - can send attachments without text
   replyToMessageId?: string;
+  attachments?: Array<{
+    fileName: string;
+    fileUrl: string;
+    fileSize: number;
+    mimeType: string;
+  }>;
 }
 
 export interface GetMessagesDto {
@@ -48,6 +56,7 @@ export class MessagesService {
       .leftJoinAndSelect('message.sender', 'sender')
       .leftJoinAndSelect('message.replyToMessage', 'replyToMessage')
       .leftJoinAndSelect('replyToMessage.sender', 'replyToMessageSender')
+      .leftJoinAndSelect('message.attachments', 'attachments')
       .orderBy('message.createdAt', 'DESC')
       .take(limit);
 
@@ -85,7 +94,12 @@ export class MessagesService {
    * Создать новое сообщение
    */
   async createMessage(data: CreateMessageDto): Promise<Message> {
-    const { chatId, senderId, content, replyToMessageId } = data;
+    const { chatId, senderId, content, replyToMessageId, attachments } = data;
+
+    // Валидация: должен быть content ИЛИ attachments
+    if (!content && (!attachments || attachments.length === 0)) {
+      throw new Error('Сообщение должно содержать текст или вложения');
+    }
 
     // Проверяем, является ли пользователь участником чата
     const isMember = await chatsService.isMember(chatId, senderId);
@@ -97,11 +111,27 @@ export class MessagesService {
     const message = this.messageRepository.create({
       chatId,
       senderId,
-      content,
+      content: content || '', // Empty string if only attachments
       replyToMessageId,
     });
 
     await this.messageRepository.save(message);
+
+    // Создаем вложения если они есть
+    if (attachments && attachments.length > 0) {
+      const attachmentsData = attachments.map((file) => ({
+        fileName: file.fileName,
+        fileUrl: file.fileUrl,
+        fileType: fileAttachmentsService.determineFileType(file.mimeType),
+        fileSize: file.fileSize,
+        mimeType: file.mimeType,
+        context: AttachmentContext.MESSAGE,
+        contextId: message.id,
+        uploadedById: senderId,
+      }));
+
+      await fileAttachmentsService.createAttachments(attachmentsData);
+    }
 
     // Обновляем updatedAt чата
     await AppDataSource.getRepository('Chat')
@@ -111,10 +141,10 @@ export class MessagesService {
       .where('id = :chatId', { chatId })
       .execute();
 
-    // Загружаем сообщение с отношениями
+    // Загружаем сообщение с отношениями (включая attachments)
     const savedMessage = await this.messageRepository.findOne({
       where: { id: message.id },
-      relations: ['sender', 'replyToMessage', 'replyToMessage.sender'],
+      relations: ['sender', 'replyToMessage', 'replyToMessage.sender', 'attachments'],
     });
 
     return savedMessage!;
@@ -194,6 +224,12 @@ export class MessagesService {
     if (message.senderId !== userId) {
       throw new Error('Вы можете удалять только свои сообщения');
     }
+
+    // Удаляем вложения (физические файлы и записи в БД)
+    await fileAttachmentsService.deleteAttachmentsByContext(
+      AttachmentContext.MESSAGE,
+      messageId
+    );
 
     message.isDeleted = true;
     message.content = 'Сообщение удалено';

@@ -5,11 +5,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   Index,
   JoinColumn,
 } from 'typeorm';
 import { Chat } from './Chat.entity';
 import { User } from './User.entity';
+import { FileAttachment } from './FileAttachment.entity';
 
 @Entity('messages')
 export class Message {
@@ -55,4 +57,9 @@ export class Message {
   @ManyToOne(() => Message, { nullable: true })
   @JoinColumn({ name: 'reply_to_message_id' })
   replyToMessage: Message | null;
+
+  @OneToMany(() => FileAttachment, (attachment) => attachment.contextId, {
+    eager: false,
+  })
+  attachments?: FileAttachment[];
 }

@@ -22,7 +22,17 @@ interface ChatState {
   createPrivateChat: (participantId: string) => Promise<Chat | null>;
   createGroupChat: (name: string, description: string | undefined, memberIds: string[]) => Promise<Chat | null>;
   updateGroupChat: (chatId: string, data: { name?: string; description?: string; avatarUrl?: string }) => Promise<void>;
-  sendMessage: (chatId: string, content: string, replyToMessageId?: string) => void;
+  sendMessage: (
+    chatId: string,
+    content?: string,
+    replyToMessageId?: string,
+    attachments?: Array<{
+      fileName: string;
+      fileUrl: string;
+      fileSize: number;
+      mimeType: string;
+    }>
+  ) => void;
   handleNewMessage: (message: Message) => void;
   handleMessageUpdated: (message: Message) => void;
   handleMessageDeleted: (messageId: string) => void;
@@ -202,7 +212,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  sendMessage: (chatId, content, replyToMessageId) => {
+  sendMessage: (chatId, content, replyToMessageId, attachments) => {
     const { socket } = get();
 
     if (!socket) {
@@ -214,6 +224,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       chatId,
       content,
       replyToMessageId,
+      attachments,
     });
   },
 

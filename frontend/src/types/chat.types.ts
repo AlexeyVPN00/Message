@@ -11,6 +11,23 @@ export enum MemberRole {
   MEMBER = 'member',
 }
 
+export enum AttachmentType {
+  IMAGE = 'image',
+  VIDEO = 'video',
+  AUDIO = 'audio',
+  DOCUMENT = 'document',
+}
+
+export interface FileAttachment {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: AttachmentType;
+  fileSize: number;
+  mimeType: string;
+  createdAt: Date;
+}
+
 export interface ChatMember {
   id: string;
   chatId: string;
@@ -47,6 +64,7 @@ export interface Message {
   updatedAt: Date;
   sender: User;
   replyToMessage?: Message;
+  attachments?: FileAttachment[];
 }
 
 export interface CreateChatDto {
@@ -55,8 +73,14 @@ export interface CreateChatDto {
 
 export interface SendMessageDto {
   chatId: string;
-  content: string;
+  content?: string;
   replyToMessageId?: string;
+  attachments?: Array<{
+    fileName: string;
+    fileUrl: string;
+    fileSize: number;
+    mimeType: string;
+  }>;
 }
 
 export interface TypingUser {

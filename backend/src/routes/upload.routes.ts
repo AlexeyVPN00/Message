@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { uploadController } from '../controllers/upload.controller';
 import { authenticate } from '../middlewares/auth.middleware';
-import { uploadAvatar, uploadMessageFile, uploadPostFile } from '../middlewares/upload.middleware';
+import { uploadAvatar, uploadMessageFile, uploadMessageFiles, uploadPostFile } from '../middlewares/upload.middleware';
 
 const router = Router();
 
@@ -16,6 +16,9 @@ router.post('/group-avatar/:chatId', uploadAvatar, uploadController.uploadGroupA
 
 // POST /api/upload/message - Загрузить файл для сообщения
 router.post('/message', uploadMessageFile, uploadController.uploadMessageFile.bind(uploadController));
+
+// POST /api/upload/messages - Загрузить файлы для сообщений (множественные)
+router.post('/messages', uploadMessageFiles, uploadController.uploadMessageFiles.bind(uploadController));
 
 // POST /api/upload/post - Загрузить файлы для поста
 router.post('/post', uploadPostFile, uploadController.uploadPostFiles.bind(uploadController));

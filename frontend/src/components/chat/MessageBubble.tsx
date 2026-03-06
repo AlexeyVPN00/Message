@@ -3,6 +3,7 @@ import { Message } from '../../types/chat.types';
 import { useAuthStore } from '../../store/authStore';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { MessageAttachment } from './MessageAttachment';
 
 interface MessageBubbleProps {
   message: Message;
@@ -69,9 +70,21 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
           </Box>
         )}
 
-        <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-          {message.content}
-        </Typography>
+        {/* Attachments */}
+        {message.attachments && message.attachments.length > 0 && (
+          <Box sx={{ mb: message.content ? 1 : 0, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            {message.attachments.map((attachment) => (
+              <MessageAttachment key={attachment.id} attachment={attachment} />
+            ))}
+          </Box>
+        )}
+
+        {/* Message text (only if not empty) */}
+        {message.content && (
+          <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            {message.content}
+          </Typography>
+        )}
 
         <Box
           sx={{
