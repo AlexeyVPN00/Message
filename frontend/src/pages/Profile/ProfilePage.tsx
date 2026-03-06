@@ -9,6 +9,8 @@ import {
   CircularProgress,
   Divider,
   Grid,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { Edit, Email, Phone, CalendarToday } from '@mui/icons-material';
 import { usersApi } from '../../api/users.api';
@@ -22,6 +24,8 @@ export const ProfilePage = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user: currentUser } = useAuthStore();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,24 +94,50 @@ export const ProfilePage = () => {
   return (
     <MainLayout>
       <Container maxWidth="md">
-        <Box sx={{ py: 4 }}>
-          <Paper elevation={3} sx={{ p: 4 }}>
+        <Box sx={{ py: { xs: 2, sm: 4 } }}>
+          <Paper elevation={3} sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
             {/* Шапка профиля */}
             <Box
               sx={{
                 display: 'flex',
-                alignItems: 'center',
-                gap: 3,
+                flexDirection: { xs: 'column', sm: 'row' },
+                alignItems: { xs: 'center', sm: 'flex-start' },
+                gap: { xs: 2, sm: 3 },
                 mb: 3,
               }}
             >
-              <Avatar src={user.avatarUrl || undefined} alt={fullName} size={120} online={user.isOnline} />
+              <Avatar
+                src={user.avatarUrl || undefined}
+                alt={fullName}
+                size={isMobile ? 100 : 120}
+                online={user.isOnline}
+              />
 
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="h4" gutterBottom>
+            <Box
+              sx={{
+                flex: 1,
+                width: '100%',
+                textAlign: { xs: 'center', sm: 'left' },
+              }}
+            >
+              <Typography
+                variant={isMobile ? 'h5' : 'h4'}
+                gutterBottom
+                sx={{
+                  wordBreak: 'break-word',
+                  overflowWrap: 'break-word',
+                }}
+              >
                 {fullName}
               </Typography>
-              <Typography variant="body1" color="text.secondary" gutterBottom>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                gutterBottom
+                sx={{
+                  wordBreak: 'break-word',
+                }}
+              >
                 @{user.username}
               </Typography>
 
@@ -117,6 +147,7 @@ export const ProfilePage = () => {
                   startIcon={<Edit />}
                   onClick={() => navigate('/profile/edit')}
                   sx={{ mt: 2 }}
+                  fullWidth={isMobile}
                 >
                   Редактировать профиль
                 </Button>
